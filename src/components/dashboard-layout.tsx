@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -57,7 +58,7 @@ import { Button } from '@/components/ui/button';
 import { DeveloperCredit } from './developer-credit';
 import { cn } from '@/lib/utils';
 import { useSpectate } from '@/contexts/spectate-context';
-import { useToast } from './hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 const SpectatingAdminBanner = () => {
   const { isSpectating, spectatingUser, stopSpectating } = useSpectate();
