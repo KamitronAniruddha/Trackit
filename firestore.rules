@@ -42,12 +42,12 @@ service cloud.firestore {
     
     // Used for WRITE rules on /users/{userId} to avoid get() on the same document.
     function isSpectatePermissionActiveOnSelf() {
-        let spectateInfo = resource.data.get('spectatePermission', null);
         return hasAdminPrivileges() &&
-               spectateInfo != null &&
-               spectateInfo.status == 'granted' &&
-               spectateInfo.expiresAt != null &&
-               spectateInfo.expiresAt > request.time;
+               'spectatePermission' in resource.data &&
+               resource.data.spectatePermission != null &&
+               resource.data.spectatePermission.status == 'granted' &&
+               resource.data.spectatePermission.expiresAt != null &&
+               resource.data.spectatePermission.expiresAt > request.time;
     }
 
 
