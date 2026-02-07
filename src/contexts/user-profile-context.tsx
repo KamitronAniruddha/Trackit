@@ -32,6 +32,8 @@ export interface UserProfile {
   isPremium?: boolean;
   accessCode?: string;
   accountStatus?: 'pending_approval' | 'active' | 'demo';
+  loginCode?: string;
+  authMethod?: 'password' | 'pattern';
 }
 
 interface UserProfileContextType {
@@ -128,6 +130,8 @@ export function UserProfileProvider({ children }: { children: React.ReactNode })
           isPremium: isPremium,
           accessCode: data.accessCode,
           accountStatus: accountStatus,
+          loginCode: data.loginCode,
+          authMethod: data.authMethod || 'password',
         });
       } else {
         setProfile(null);

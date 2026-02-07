@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -100,6 +101,7 @@ export default function SignupForm() {
         isPremium: false,
         accountStatus: 'demo',
         accessCode: accessCode,
+        authMethod: values.authMethod,
       };
 
       await setDoc(userDocRef, userData);

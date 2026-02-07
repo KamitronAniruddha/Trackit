@@ -55,6 +55,7 @@ import type { ProgressState } from '@/hooks/use-progress';
 import { useSyllabus, type SyllabusData } from '@/contexts/syllabus-context';
 import { Switch } from './ui/switch';
 import { PremiumCodeActivator } from './premium-code-activator';
+import { PatternLock } from './ui/pattern-lock';
 
 
 const profileFormSchema = z.object({
@@ -64,11 +65,11 @@ const profileFormSchema = z.object({
 });
 
 const passwordFormSchema = z.object({
-    oldPassword: z.string().min(1, { message: 'Old password is required.' }),
-    newPassword: z.string().min(8, { message: 'New password must be at least 8 characters long.' }),
+    oldPassword: z.string().min(1, { message: 'Your old credential is required.' }),
+    newPassword: z.string().min(8, { message: 'New credential must be at least 8 characters (or a pattern of 5+ dots).' }),
     confirmPassword: z.string(),
 }).refine((data) => data.newPassword === data.confirmPassword, {
-    message: "New passwords don't match.",
+    message: "New credentials don't match.",
     path: ['confirmPassword'],
 });
 
@@ -120,6 +121,7 @@ export function ProfileClient() {
     const [isUpdatingAppearance, setIsUpdatingAppearance] = useState(false);
     const [isResetting, setIsResetting] = useState(false);
     const [isSettingPin, setIsSettingPin] = useState(false);
+    const [oldPatternError, setOldPatternError] = useState(false);
 
 
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -294,6 +296,7 @@ export function ProfileClient() {
         }
 
         setIsChangingPassword(true);
+        setOldPatternError(false);
         try {
             const currentUser = auth.currentUser;
             const credential = EmailAuthProvider.credential(currentUser.email, values.oldPassword);
@@ -302,8 +305,8 @@ export function ProfileClient() {
             await updatePassword(currentUser, values.newPassword);
 
             toast({
-                title: "Password Updated",
-                description: "Your password has been changed successfully.",
+                title: "Credential Updated",
+                description: `Your ${profile?.authMethod === 'pattern' ? 'pattern' : 'password'} has been changed successfully.`,
             });
             setIsPasswordDialogOpen(false);
             passwordForm.reset();
@@ -311,13 +314,16 @@ export function ProfileClient() {
         } catch (error: any) {
             let description = "An unexpected error occurred.";
             if (error.code === 'auth/wrong-password') {
-                description = "The old password you entered is incorrect. Please try again.";
+                description = `The old ${profile?.authMethod === 'pattern' ? 'pattern' : 'password'} you entered is incorrect.`;
+                 if (profile?.authMethod === 'pattern') {
+                    setOldPatternError(true);
+                }
             } else if (error.message) {
                 description = error.message;
             }
             toast({
                 variant: "destructive",
-                title: "Password Change Failed",
+                title: "Update Failed",
                 description,
             });
         } finally {
@@ -782,62 +788,114 @@ export function ProfileClient() {
                                 setIsPasswordDialogOpen(isOpen);
                                 if (!isOpen) {
                                     passwordForm.reset();
+                                    setOldPatternError(false);
                                 }
                             }}>
                                 <DialogTrigger asChild>
                                     <Button type="button" className="w-full">
                                         <KeySquare className="mr-2 h-4 w-4" />
-                                        Change Password
+                                        Change {profile?.authMethod === 'pattern' ? 'Login Pattern' : 'Password'}
                                     </Button>
                                 </DialogTrigger>
-                                <DialogContent className="sm:max-w-[425px]">
+                                <DialogContent className="sm:max-w-md">
                                     <DialogHeader>
-                                        <DialogTitle>Change Password</DialogTitle>
+                                        <DialogTitle>Change {profile?.authMethod === 'pattern' ? 'Login Pattern' : 'Password'}</DialogTitle>
                                         <DialogDescription>
-                                            Enter your old and new password below.
+                                            {profile?.authMethod === 'pattern' 
+                                                ? 'Draw your old pattern, then your new one twice to confirm.' 
+                                                : "Enter your old and new password below."}
                                         </DialogDescription>
                                     </DialogHeader>
                                     <Form {...passwordForm}>
-                                        <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-6 pt-4">
-                                            <FormField
-                                                control={passwordForm.control}
-                                                name="oldPassword"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>Old Password</FormLabel>
-                                                        <FormControl>
-                                                            <Input type="password" placeholder="••••••••" {...field} disabled={isChangingPassword} />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                            <FormField
-                                                control={passwordForm.control}
-                                                name="newPassword"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>New Password</FormLabel>
-                                                        <FormControl>
-                                                            <Input type="password" placeholder="••••••••" {...field} disabled={isChangingPassword} />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                            <FormField
-                                                control={passwordForm.control}
-                                                name="confirmPassword"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>Confirm New Password</FormLabel>
-                                                        <FormControl>
-                                                            <Input type="password" placeholder="••••••••" {...field} disabled={isChangingPassword} />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
+                                        <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4 pt-4">
+                                            {profile?.authMethod === 'pattern' ? (
+                                                <>
+                                                    <FormField control={passwordForm.control} name="oldPassword" render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Old Pattern</FormLabel>
+                                                            <FormControl>
+                                                                <PatternLock 
+                                                                    onChange={(pattern) => {
+                                                                        field.onChange(pattern.join('-'));
+                                                                        setOldPatternError(false);
+                                                                    }}
+                                                                    error={oldPatternError || !!passwordForm.formState.errors.oldPassword}
+                                                                    onEnd={() => passwordForm.trigger('oldPassword')}
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )} />
+                                                    <FormField control={passwordForm.control} name="newPassword" render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>New Pattern</FormLabel>
+                                                            <FormControl>
+                                                                <PatternLock
+                                                                    onChange={(pattern) => field.onChange(pattern.join('-'))}
+                                                                    error={!!passwordForm.formState.errors.newPassword}
+                                                                    onEnd={() => passwordForm.trigger('newPassword')}
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )} />
+                                                    <FormField control={passwordForm.control} name="confirmPassword" render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Confirm New Pattern</FormLabel>
+                                                            <FormControl>
+                                                                <PatternLock
+                                                                    onChange={(pattern) => field.onChange(pattern.join('-'))}
+                                                                    error={!!passwordForm.formState.errors.confirmPassword}
+                                                                    onEnd={() => passwordForm.trigger('confirmPassword')}
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )} />
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <FormField
+                                                        control={passwordForm.control}
+                                                        name="oldPassword"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Old Password</FormLabel>
+                                                                <FormControl>
+                                                                    <Input type="password" placeholder="••••••••" {...field} disabled={isChangingPassword} />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                    <FormField
+                                                        control={passwordForm.control}
+                                                        name="newPassword"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>New Password</FormLabel>
+                                                                <FormControl>
+                                                                    <Input type="password" placeholder="••••••••" {...field} disabled={isChangingPassword} />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                    <FormField
+                                                        control={passwordForm.control}
+                                                        name="confirmPassword"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Confirm New Password</FormLabel>
+                                                                <FormControl>
+                                                                    <Input type="password" placeholder="••••••••" {...field} disabled={isChangingPassword} />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                </>
+                                            )}
                                             <DialogFooter>
                                                 <Button type="submit" disabled={isChangingPassword}>
                                                     {isChangingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

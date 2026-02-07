@@ -114,6 +114,11 @@
         "loginCode": {
             "type": "string",
             "description": "A 4-digit PIN for quick app access."
+        },
+        "authMethod": {
+            "type": "string",
+            "enum": ["password", "pattern"],
+            "description": "The user's primary authentication method."
         }
       },
       "required": [
