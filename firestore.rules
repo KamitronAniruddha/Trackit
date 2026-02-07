@@ -53,24 +53,36 @@ service cloud.firestore {
 
       // UPDATE:
       allow update: if 
-        // Admins can update ban status and other moderation fields.
-        (hasAdminPrivileges() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isBanned', 'banExpiresAt', 'isPremium', 'accountStatus', 'hasPendingUnbanRequest', 'role'])) ||
-        // Admin starting/stopping a spectate session
-        (canSpectate(userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['spectatePermission.spectatingAdminId'])) ||
-        // Owners can update their own data
-        (isOwner(userId) && resource.data.get('isDeleted', false) == false &&
-            (
-                // User granting/revoking spectate permission
-                (request.resource.data.diff(resource.data).affectedKeys().hasAny(['spectatePermission.status', 'spectatePermission.expiresAt', 'spectatePermission.grantedAt']) && !request.resource.data.diff(resource.data).affectedKeys().has('spectatePermission.spectatingAdminId')) ||
-                // Case 1: Premium activation via one-time code.
-                (
-                  request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isPremium', 'accountStatus']) &&
-                  resource.data.isPremium == false && request.resource.data.isPremium == true &&
-                  resource.data.accountStatus == 'demo' && request.resource.data.accountStatus == 'active'
-                ) ||
-                // Case 2: Normal profile update by the user.
-                (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'isBanned', 'isDeleted', 'banExpiresAt', 'accessCode', 'isPremium', 'accountStatus', 'spectatePermission']))
-            )
+        // Case A: Admin performing moderation on non-admin user
+        (hasAdminPrivileges() && resource.data.role != 'admin' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isBanned', 'banExpiresAt', 'isPremium', 'accountStatus', 'hasPendingUnbanRequest', 'role'])) ||
+        
+        // Case B: Owner updating their own profile
+        (isOwner(userId) && resource.data.get('isDeleted', false) == false && (
+          // Sub-case B1: Normal profile update (any field EXCEPT protected ones)
+          (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'isBanned', 'isDeleted', 'banExpiresAt', 'accessCode', 'isPremium', 'accountStatus', 'spectatePermission'])) ||
+          
+          // Sub-case B2: User granting/revoking spectate permission
+          (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['spectatePermission']) &&
+            // User cannot set the spectatingAdminId themselves. It must be null or same as before.
+            request.resource.data.spectatePermission.get('spectatingAdminId', null) == resource.data.spectatePermission.get('spectatingAdminId', null)
+          ) ||
+
+          // Sub-case B3: Premium activation via one-time code.
+          (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isPremium', 'accountStatus']) &&
+            resource.data.isPremium == false && request.resource.data.isPremium == true &&
+            resource.data.accountStatus == 'demo' && request.resource.data.accountStatus == 'active'
+          )
+        )) ||
+
+        // Case C: Admin starting/stopping a spectate session
+        (canSpectate(userId) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['spectatePermission']) &&
+          // Admin can only change spectatingAdminId, not other permission fields
+          request.resource.data.spectatePermission.status == resource.data.spectatePermission.status &&
+          request.resource.data.spectatePermission.expiresAt == resource.data.spectatePermission.expiresAt &&
+          request.resource.data.spectatePermission.grantedAt == resource.data.spectatePermission.grantedAt
         );
       
       // DELETE: Disallow hard deletes. Soft deletes are handled via an 'update'.
