@@ -1,0 +1,20 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String    @id @default(cuid())
+  name               String
+  email              String    @unique
+  password           String
+  loginCode          String?   @unique
+  loginCodeExpires   DateTime?
+  permanentLoginCode String?   @unique
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}

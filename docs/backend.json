@@ -1,0 +1,676 @@
+
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Stores user profile information.",
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "type": "string",
+          "description": "The user's display name."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The user's email address."
+        },
+        "photoURL": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL for the user's profile picture."
+        },
+        "classLevel": {
+          "type": "string",
+          "enum": [
+            "11",
+            "12",
+            "Dropper"
+          ],
+          "description": "The user's class level."
+        },
+        "targetYear": {
+          "type": "number",
+          "description": "The user's target exam year."
+        },
+        "exam": {
+          "type": "string",
+          "enum": [
+            "NEET",
+            "JEE"
+          ],
+          "description": "The exam the user is preparing for."
+        },
+        "onboardingCompleted": {
+          "type": "boolean",
+          "description": "Flag indicating if the user has completed onboarding."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin", "subadmin", "user"],
+          "description": "The user's role in the application."
+        },
+        "isBanned": {
+          "type": "boolean",
+          "description": "Flag indicating if the user is banned."
+        },
+        "isDeleted": {
+          "type": "boolean",
+          "description": "Flag indicating if the user is soft-deleted."
+        },
+        "banExpiresAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the user's ban expires."
+        },
+        "hasPendingUnbanRequest": {
+          "type": "boolean",
+          "description": "Flag indicating if the user has a pending unban request."
+        },
+        "theme": {
+            "type": "string",
+            "enum": ["default", "rose", "violet", "green", "orange", "blue", "purple", "teal", "crimson"],
+            "description": "The user's selected color theme."
+        },
+        "font": {
+            "type": "string",
+            "enum": ["poppins", "inter", "lato", "montserrat", "roboto", "open-sans", "noto-sans"],
+            "description": "The user's selected application font."
+        },
+        "darkMode": {
+            "type": "boolean",
+            "description": "Flag indicating if the user prefers dark mode."
+        },
+        "currentStreak": {
+          "type": "number",
+          "description": "The user's current daily goal completion streak."
+        },
+        "longestStreak": {
+          "type": "number",
+          "description": "The user's longest ever daily goal completion streak."
+        },
+        "lastGoalCompletedDate": {
+          "type": "string",
+          "format": "date",
+          "description": "The date the last daily goal was completed (YYYY-MM-DD)."
+        },
+        "totalPoints": {
+          "type": "number",
+          "description": "The user's total accumulated points from completing goals."
+        },
+        "isPremium": {
+            "type": "boolean",
+            "description": "Flag indicating if the user has a premium membership."
+        },
+        "accessCode": {
+            "type": "string",
+            "description": "A unique code for a demo user to show an admin for manual account activation."
+        },
+        "accountStatus": {
+            "type": "string",
+            "enum": ["pending_approval", "active", "demo"],
+            "description": "The current status of the user's account."
+        }
+      },
+      "required": [
+        "displayName",
+        "email",
+        "onboardingCompleted"
+      ]
+    },
+    "Mistake": {
+      "title": "Mistake Notebook Entry",
+      "description": "Represents a single mistake logged by a user in their mistake notebook.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who logged the mistake."
+        },
+        "subject": {
+          "type": "string",
+          "description": "The subject related to the mistake (e.g., 'physics')."
+        },
+        "chapter": {
+          "type": "string",
+          "description": "The chapter related to the mistake."
+        },
+        "question": {
+          "type": "string",
+          "description": "The question, topic, or context of the mistake."
+        },
+        "myMistake": {
+          "type": "string",
+          "description": "User's description of what they did wrong."
+        },
+        "correctConcept": {
+          "type": "string",
+          "description": "User's description of the correct concept or solution."
+        },
+        "tags": {
+          "type": "array",
+          "description": "User-defined tags for categorizing the mistake.",
+          "items": { "type": "string" }
+        },
+        "status": {
+            "type": "string",
+            "enum": ["active", "reviewed"],
+            "description": "The status of the mistake entry."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the mistake was logged."
+        }
+      },
+      "required": ["userId", "subject", "chapter", "question", "myMistake", "correctConcept", "status", "createdAt"]
+    },
+    "ChapterProgress": {
+      "title": "Chapter Progress",
+      "description": "Stores a user's progress for a single chapter.",
+      "type": "object",
+      "properties": {
+        "completed": {
+          "type": "boolean",
+          "description": "Whether the chapter is marked as completed."
+        },
+        "questions": {
+          "type": "number",
+          "description": "Number of questions practiced."
+        },
+        "confidence": {
+          "type": "number",
+          "description": "User's confidence level from 0 to 100."
+        },
+        "revisions": {
+          "type": "array",
+          "description": "An array of timestamps (numbers) for each revision.",
+          "items": {
+            "type": "number"
+          }
+        }
+      },
+      "required": ["completed", "questions", "confidence", "revisions"]
+    },
+    "UserProgress": {
+      "title": "User Progress",
+      "description": "Stores a user's progress and revision history.",
+      "type": "object",
+      "properties": {
+        "progress": {
+          "type": "object",
+          "description": "An object where keys are subjects and values are objects of chapter progress.",
+           "additionalProperties": {
+              "type": "object",
+              "additionalProperties": {
+                  "$ref": "#/backend/entities/ChapterProgress"
+              }
+          }
+        },
+        "revisions": {
+          "type": "object",
+          "description": "Stores revision history for each subject. Keys are subject names.",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "timestamp": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "questions": {
+                  "type": "number",
+                  "description": "Number of questions solved during revision."
+                }
+              },
+              "required": ["timestamp", "questions"]
+            }
+          }
+        }
+      },
+      "required": [
+        "progress"
+      ]
+    },
+    "Quote": {
+      "title": "Quote",
+      "description": "A motivational quote saved by the user.",
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "The content of the quote."
+        },
+        "isAiGenerated": {
+          "type": "boolean",
+          "description": "Flag indicating if the quote was generated by AI."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the quote was created."
+        }
+      },
+      "required": [
+        "text",
+        "isAiGenerated",
+        "createdAt"
+      ]
+    },
+    "Syllabus": {
+      "title": "Syllabus",
+      "description": "Stores the syllabus for an exam subject.",
+      "type": "object",
+      "properties": {
+        "exam": {
+          "type": "string",
+          "enum": ["NEET", "JEE"],
+          "description": "The exam this syllabus belongs to."
+        },
+        "subject": {
+          "type": "string",
+          "description": "The subject of the syllabus (e.g., 'physics', 'biology')."
+        },
+        "chapters": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "An ordered list of chapter names for the subject."
+        }
+      },
+      "required": ["exam", "subject", "chapters"]
+    },
+    "UnbanRequest": {
+      "title": "Unban Request",
+      "description": "A request from a banned user to be unbanned.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user making the request."
+        },
+        "userName": {
+          "type": "string",
+          "description": "The display name of the user."
+        },
+        "userEmail": {
+          "type": "string",
+          "format": "email",
+          "description": "The email of the user."
+        },
+        "reason": {
+          "type": "string",
+          "description": "The reason provided by the user for the unban request."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "reviewed"],
+          "description": "The current status of the request."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the request was created."
+        }
+      },
+      "required": ["userId", "userName", "userEmail", "reason", "status", "createdAt"]
+    },
+    "Group": {
+      "title": "Group",
+      "description": "Represents a user-created group for collaboration.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the group."
+        },
+        "description": {
+          "type": "string",
+          "description": "A short description of the group's purpose."
+        },
+        "photoURL": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL for the group's profile picture."
+        },
+        "adminId": {
+          "type": "string",
+          "description": "The UID of the user who is the admin of the group."
+        },
+        "memberIds": {
+          "type": "array",
+          "description": "Array of user UIDs who are members of the group.",
+          "items": { "type": "string" }
+        },
+        "lastMessage": {
+            "type": "string",
+            "description": "The text of the last message sent in the group."
+        },
+        "lastMessageAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of the last message."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the group was created."
+        }
+      },
+      "required": ["name", "adminId", "memberIds", "createdAt"]
+    },
+    "GroupMessage": {
+      "title": "Group Chat Message",
+      "description": "Represents a single message within a group chat.",
+      "type": "object",
+      "properties": {
+        "senderId": {
+          "type": "string",
+          "description": "The UID of the message sender."
+        },
+        "senderName": {
+            "type": "string",
+            "description": "The display name of the sender."
+        },
+        "senderPhotoURL": {
+            "type": "string",
+            "format": "uri",
+            "description": "The photo URL of the sender."
+        },
+        "text": {
+          "type": "string",
+          "description": "The content of the message."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the message was sent."
+        }
+      },
+      "required": ["senderId", "text", "createdAt"]
+    },
+    "DailyGoal": {
+      "title": "Daily Goal",
+      "description": "A user's collection of study goals for a single day.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user this goal belongs to."
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "The date for which this goal is set."
+        },
+        "goals": {
+          "type": "array",
+          "description": "A list of individual goals for the day.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "chapter",
+                  "custom"
+                ]
+              },
+              "subject": {
+                "type": "string"
+              },
+              "chapter": {
+                "type": "string"
+              },
+              "text": {
+                "type": "string",
+                "description": "The text content for a custom goal."
+              },
+              "completed": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "type",
+              "completed"
+            ]
+          }
+        },
+        "completed": {
+          "type": "boolean",
+          "description": "Whether all goals for the day have been completed."
+        }
+      },
+      "required": [
+        "userId",
+        "date",
+        "goals",
+        "completed"
+      ]
+    },
+    "Post": {
+      "title": "A-gram Post",
+      "description": "Represents a user-created post in A-gram.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who created the post."
+        },
+        "userDisplayName": {
+          "type": "string",
+          "description": "The display name of the user who created the post."
+        },
+        "userPhotoURL": {
+          "type": "string",
+          "format": "uri",
+          "description": "The profile picture URL of the user who created the post."
+        },
+        "imageUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "The URL of the image for the post."
+        },
+        "caption": {
+          "type": "string",
+          "description": "The caption for the post."
+        },
+        "likes": {
+          "type": "array",
+          "description": "An array of user UIDs who have liked the post.",
+          "items": { "type": "string" }
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the post was created."
+        }
+      },
+      "required": ["userId", "userDisplayName", "imageUrl", "createdAt", "likes"]
+    },
+    "Comment": {
+      "title": "A-gram Comment",
+      "description": "Represents a comment on a post.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who made the comment."
+        },
+        "userDisplayName": {
+          "type": "string",
+          "description": "The display name of the user."
+        },
+        "userPhotoURL": {
+            "type": "string",
+            "format": "uri",
+            "description": "The photo URL of the sender."
+        },
+        "text": {
+          "type": "string",
+          "description": "The content of the comment."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the comment was made."
+        }
+      },
+      "required": ["userId", "userDisplayName", "text", "createdAt"]
+    },
+    "Follow": {
+        "title": "Follow Relationship",
+        "description": "Represents a follow relationship between two users.",
+        "type": "object",
+        "properties": {
+          "followerId": {
+            "type": "string",
+            "description": "The UID of the user who is following."
+          },
+          "followedId": {
+            "type": "string",
+            "description": "The UID of the user who is being followed."
+          }
+        },
+        "required": ["followerId", "followedId"]
+      },
+    "ContactSubmission": {
+      "title": "Contact Form Submission",
+      "description": "Stores a submission from the contact form.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The sender's name."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The sender's email."
+        },
+        "message": {
+          "type": "string",
+          "description": "The content of the message."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the submission was created."
+        },
+        "isRead": {
+          "type": "boolean",
+          "description": "Flag indicating if an admin has read the submission."
+        }
+      },
+      "required": ["name", "email", "message", "createdAt", "isRead"]
+    },
+    "PremiumCode": {
+      "title": "Premium Activation Code",
+      "description": "A one-time code generated by an admin to grant premium access.",
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "The unique activation code string."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the code was created."
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "The UID of the admin who created the code."
+        }
+      },
+      "required": [
+        "code",
+        "createdAt",
+        "createdBy"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password"
+    ]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/backend/entities/UserProfile"
+      },
+      "description": "User profile documents, where each document ID is the user's UID."
+    },
+    "/users/{userId}/quotes/{quoteId}": {
+      "schema": {
+        "$ref": "#/backend/entities/Quote"
+      },
+      "description": "A collection of motivational quotes saved by a user."
+    },
+    "/users/{userId}/dailyGoals/{goalId}": {
+      "schema": {
+        "$ref": "#/backend/entities/DailyGoal"
+      },
+      "description": "A user's daily study goals, where the document ID is the date string 'YYYY-MM-DD'."
+    },
+     "/users/{userId}/mistakes/{mistakeId}": {
+      "schema": {
+        "$ref": "#/backend/entities/Mistake"
+      },
+      "description": "A user's personal collection of logged mistakes."
+    },
+    "/userProgress/{userId}": {
+      "schema": {
+        "$ref": "#/backend/entities/UserProgress"
+      },
+      "description": "Documents storing syllabus progress for each user, where the document ID is the user's UID."
+    },
+    "/syllabuses/{syllabusId}": {
+      "schema": {
+        "$ref": "#/backend/entities/Syllabus"
+      },
+      "description": "Collection of syllabus documents for each subject and exam."
+    },
+    "/unbanRequests/{requestId}": {
+        "schema": {
+            "$ref": "#/backend/entities/UnbanRequest"
+        },
+        "description": "Collection of unban requests from banned users."
+    },
+    "/contactSubmissions/{submissionId}": {
+        "schema": {
+            "$ref": "#/backend/entities/ContactSubmission"
+        },
+        "description": "Collection of messages submitted through the contact form."
+    },
+    "/groups/{groupId}": {
+      "schema": { "$ref": "#/backend/entities/Group" },
+      "description": "Collection of user-created groups."
+    },
+    "/groups/{groupId}/messages/{messageId}": {
+      "schema": { "$ref": "#/backend/entities/GroupMessage" },
+      "description": "A subcollection of messages within a group."
+    },
+    "/posts/{postId}": {
+        "schema": { "$ref": "#/backend/entities/Post" },
+        "description": "Collection of all posts for A-gram."
+    },
+    "/posts/{postId}/comments/{commentId}": {
+        "schema": { "$ref": "#/backend/entities/Comment" },
+        "description": "Subcollection of comments on a specific post."
+    },
+    "/follows/{followId}": {
+        "schema": { "$ref": "#/backend/entities/Follow" },
+        "description": "Stores all follow relationships. Each document represents one user following another."
+    },
+    "/premiumCodes/{codeId}": {
+      "schema": {
+        "$ref": "#/backend/entities/PremiumCode"
+      },
+      "description": "Collection of one-time premium activation codes generated by admins. The document ID is the code string."
+    }
+  }
+}
