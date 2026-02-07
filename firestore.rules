@@ -29,6 +29,7 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    // Used for READ rules where we need to check another user's document.
     function canSpectate(userId) {
         let user = get(/databases/$(database)/documents/users/$(userId)).data;
         return hasAdminPrivileges() &&
@@ -38,6 +39,17 @@ service cloud.firestore {
                user.spectatePermission.expiresAt != null &&
                user.spectatePermission.expiresAt > request.time;
     }
+    
+    // Used for WRITE rules on /users/{userId} to avoid get() on the same document.
+    function isSpectatePermissionActiveOnSelf() {
+        let spectateInfo = resource.data.get('spectatePermission', null);
+        return hasAdminPrivileges() &&
+               spectateInfo != null &&
+               spectateInfo.status == 'granted' &&
+               spectateInfo.expiresAt != null &&
+               spectateInfo.expiresAt > request.time;
+    }
+
 
     // --- Collection Rules ---
 
@@ -79,7 +91,7 @@ service cloud.firestore {
         )) ||
 
         // Case C: Admin starting/stopping a spectate session
-        (canSpectate(userId) &&
+        (isSpectatePermissionActiveOnSelf() &&
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['spectatePermission']) &&
           // Admin can only change spectatingAdminId, not other permission fields.
           // Compare timestamp seconds instead of objects to avoid type issues.
