@@ -66,6 +66,7 @@ export function UserList() {
             const userList = querySnapshot.docs
                 .map(doc => ({
                     id: doc.id,
+                    uid: doc.id,
                     ...doc.data(),
                 } as UserWithId))
                 .filter(user => user.isDeleted !== true); // Filter out deleted users
