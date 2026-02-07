@@ -25,6 +25,8 @@ import {
   Lock,
   Camera,
   Timer,
+  Eye,
+  LogOut as LogOutIcon,
 } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -54,6 +56,48 @@ import { useUserProfile } from '@/contexts/user-profile-context';
 import { Button } from '@/components/ui/button';
 import { DeveloperCredit } from './developer-credit';
 import { cn } from '@/lib/utils';
+import { useSpectate } from '@/contexts/spectate-context';
+
+const SpectatingAdminBanner = () => {
+  const { isSpectating, spectatingUser, stopSpectating } = useSpectate();
+  if (!isSpectating || !spectatingUser) return null;
+
+  return (
+    <div className="bg-yellow-500 text-yellow-950 p-2 text-center text-sm font-semibold flex items-center justify-center gap-4">
+      <div className="flex items-center gap-2">
+        <Eye className="h-4 w-4" />
+        <span>Spectating: {spectatingUser.displayName}</span>
+      </div>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-auto px-2 py-1 text-yellow-950 hover:bg-yellow-600 hover:text-yellow-950"
+        onClick={stopSpectating}
+      >
+        <LogOutIcon className="mr-2 h-4 w-4" />
+        Stop Spectating
+      </Button>
+    </div>
+  );
+};
+
+const BeingSpectatedUserBanner = () => {
+    const { profile } = useUserProfile();
+    const { isSpectating } = useSpectate();
+    
+    // Don't show this banner to the admin who is spectating
+    if (isSpectating) return null;
+
+    const isBeingSpectated = !!profile?.spectatePermission?.spectatingAdminId;
+    if (!isBeingSpectated) return null;
+
+    return (
+         <div className="bg-blue-500 text-blue-50 p-2 text-center text-sm font-semibold flex items-center justify-center gap-2">
+            <Eye className="h-4 w-4" />
+            <span>An admin is currently viewing your dashboard in read-only mode.</span>
+        </div>
+    );
+}
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -196,6 +240,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
+        <SpectatingAdminBanner />
+        <BeingSpectatedUserBanner />
         <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
           <div className="flex items-center gap-2">
             <SidebarTrigger className="md:hidden" />

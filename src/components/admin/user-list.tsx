@@ -17,7 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, MoreHorizontal, Loader2, Trash2 } from 'lucide-react';
+import { AlertTriangle, MoreHorizontal, Loader2, Trash2, Eye } from 'lucide-react';
 import { 
     DropdownMenu, 
     DropdownMenuContent, 
@@ -37,14 +37,15 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
+import { useSpectate } from '@/contexts/spectate-context';
 
 type UserWithId = UserProfile & { id: string };
 
 export function UserList() {
     const firestore = useFirestore();
     const { toast } = useToast();
-    const { profile } = useUserProfile();
+    const { profile: adminProfile } = useUserProfile();
+    const { startSpectating } = useSpectate();
     const [users, setUsers] = useState<UserWithId[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -147,6 +148,11 @@ export function UserList() {
         }
     };
 
+    const handleStartSpectating = (targetUser: UserProfile) => {
+        if (!adminProfile) return;
+        startSpectating(targetUser, adminProfile);
+    }
+
     if (loading) {
         return (
             <div className="space-y-4">
@@ -187,90 +193,102 @@ export function UserList() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {users.map(user => (
-                            <TableRow key={user.id}>
-                                <TableCell>
-                                    <div className="flex items-center gap-3">
-                                        <Avatar className="h-8 w-8">
-                                            <AvatarImage src={user.photoURL ?? undefined} />
-                                            <AvatarFallback>
-                                                {user.displayName?.charAt(0).toUpperCase() || 'U'}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                        <span className="font-medium">{user.displayName}</span>
-                                    </div>
-                                </TableCell>
-                                <TableCell>{user.email}</TableCell>
-                                <TableCell>
-                                    <Badge variant="outline">{user.exam || 'N/A'}</Badge>
-                                </TableCell>
-                                <TableCell>
-                                    {user.isBanned ? (
-                                        <Badge variant="destructive">Banned</Badge>
-                                    ) : (
-                                        <Badge variant={user.onboardingCompleted ? 'secondary' : 'outline'}>
-                                            {user.onboardingCompleted ? 'Active' : 'Onboarding'}
-                                        </Badge>
-                                    )}
-                                </TableCell>
-                                <TableCell>
-                                    {user.role === 'admin' ? (
-                                        <Badge>Admin</Badge>
-                                    ) : user.role === 'subadmin' ? (
-                                        <Badge variant="secondary">Sub-Admin</Badge>
-                                    ) : (
-                                        <span className="text-sm text-muted-foreground">User</span>
-                                    )}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                    {profile && user.id !== profile.uid && user.role !== 'admin' && (
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                                    <span className="sr-only">Open menu</span>
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                {profile.role === 'admin' && (
-                                                    <>
-                                                        <DropdownMenuSub>
-                                                            <DropdownMenuSubTrigger>Change Role</DropdownMenuSubTrigger>
-                                                            <DropdownMenuPortal>
-                                                                <DropdownMenuSubContent>
-                                                                    <DropdownMenuRadioGroup value={user.role || 'user'} onValueChange={(role) => handleRoleChange(user, role)}>
-                                                                        <DropdownMenuRadioItem value="admin">Admin</DropdownMenuRadioItem>
-                                                                        <DropdownMenuRadioItem value="subadmin">Sub-Admin</DropdownMenuRadioItem>
-                                                                        <DropdownMenuRadioItem value="user">User</DropdownMenuRadioItem>
-                                                                    </DropdownMenuRadioGroup>
-                                                                </DropdownMenuSubContent>
-                                                            </DropdownMenuPortal>
-                                                        </DropdownMenuSub>
-                                                        <DropdownMenuSeparator />
-                                                    </>
-                                                )}
+                        {users.map(user => {
+                            const canSpectate = user.spectatePermission?.status === 'granted' && user.spectatePermission.expiresAt && user.spectatePermission.expiresAt.toDate() > new Date();
 
-                                                {(profile.role === 'admin' || (profile.role === 'subadmin' && user.role === 'user')) && (
-                                                    user.isBanned 
-                                                        ? <DropdownMenuItem onClick={() => handleUnbanUser(user)}>Unban User</DropdownMenuItem>
-                                                        : <DropdownMenuItem onSelect={() => setBanUser(user)}>Ban User</DropdownMenuItem>
-                                                )}
-
-                                                {profile.role === 'admin' && (
-                                                    <>
-                                                        <DropdownMenuSeparator />
-                                                        <DropdownMenuItem onSelect={() => setUserToDelete(user)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                                                            <Trash2 className="mr-2 h-4 w-4"/>
-                                                            Delete User
+                            return (
+                                <TableRow key={user.id}>
+                                    <TableCell>
+                                        <div className="flex items-center gap-3">
+                                            <Avatar className="h-8 w-8">
+                                                <AvatarImage src={user.photoURL ?? undefined} />
+                                                <AvatarFallback>
+                                                    {user.displayName?.charAt(0).toUpperCase() || 'U'}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            <span className="font-medium">{user.displayName}</span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>{user.email}</TableCell>
+                                    <TableCell>
+                                        <Badge variant="outline">{user.exam || 'N/A'}</Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                        {user.isBanned ? (
+                                            <Badge variant="destructive">Banned</Badge>
+                                        ) : (
+                                            <Badge variant={user.onboardingCompleted ? 'secondary' : 'outline'}>
+                                                {user.onboardingCompleted ? 'Active' : 'Onboarding'}
+                                            </Badge>
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        {user.role === 'admin' ? (
+                                            <Badge>Admin</Badge>
+                                        ) : user.role === 'subadmin' ? (
+                                            <Badge variant="secondary">Sub-Admin</Badge>
+                                        ) : (
+                                            <span className="text-sm text-muted-foreground">User</span>
+                                        )}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        {adminProfile && user.id !== adminProfile.uid && user.role !== 'admin' && (
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" className="h-8 w-8 p-0">
+                                                        <span className="sr-only">Open menu</span>
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    {canSpectate && (
+                                                        <DropdownMenuItem onSelect={() => handleStartSpectating(user)}>
+                                                            <Eye className="mr-2 h-4 w-4" />
+                                                            Spectate User
                                                         </DropdownMenuItem>
-                                                    </>
-                                                )}
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    )}
-                                </TableCell>
-                            </TableRow>
-                        ))}
+                                                    )}
+
+                                                    {adminProfile.role === 'admin' && (
+                                                        <>
+                                                            {canSpectate && <DropdownMenuSeparator />}
+                                                            <DropdownMenuSub>
+                                                                <DropdownMenuSubTrigger>Change Role</DropdownMenuSubTrigger>
+                                                                <DropdownMenuPortal>
+                                                                    <DropdownMenuSubContent>
+                                                                        <DropdownMenuRadioGroup value={user.role || 'user'} onValueChange={(role) => handleRoleChange(user, role)}>
+                                                                            <DropdownMenuRadioItem value="admin">Admin</DropdownMenuRadioItem>
+                                                                            <DropdownMenuRadioItem value="subadmin">Sub-Admin</DropdownMenuRadioItem>
+                                                                            <DropdownMenuRadioItem value="user">User</DropdownMenuRadioItem>
+                                                                        </DropdownMenuRadioGroup>
+                                                                    </DropdownMenuSubContent>
+                                                                </DropdownMenuPortal>
+                                                            </DropdownMenuSub>
+                                                            <DropdownMenuSeparator />
+                                                        </>
+                                                    )}
+
+                                                    {(adminProfile.role === 'admin' || (adminProfile.role === 'subadmin' && user.role === 'user')) && (
+                                                        user.isBanned 
+                                                            ? <DropdownMenuItem onClick={() => handleUnbanUser(user)}>Unban User</DropdownMenuItem>
+                                                            : <DropdownMenuItem onSelect={() => setBanUser(user)}>Ban User</DropdownMenuItem>
+                                                    )}
+
+                                                    {adminProfile.role === 'admin' && (
+                                                        <>
+                                                            <DropdownMenuSeparator />
+                                                            <DropdownMenuItem onSelect={() => setUserToDelete(user)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                                                <Trash2 className="mr-2 h-4 w-4"/>
+                                                                Delete User
+                                                            </DropdownMenuItem>
+                                                        </>
+                                                    )}
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        )}
+                                    </TableCell>
+                                </TableRow>
+                            );
+                        })}
                     </TableBody>
                 </Table>
             </div>

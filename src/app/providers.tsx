@@ -6,6 +6,7 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { UserProfileProvider, useUserProfile } from '@/contexts/user-profile-context';
 import { useEffect } from 'react';
 import { AppGuard } from '@/components/app-guard';
+import { SpectateProvider } from '@/contexts/spectate-context';
 
 function ThemeApplicator({ children }: { children: React.ReactNode }) {
   const { profile } = useUserProfile();
@@ -42,6 +43,7 @@ function ThemeApplicator({ children }: { children: React.ReactNode }) {
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <FirebaseClientProvider>
+      <SpectateProvider>
         <UserProfileProvider>
           <ThemeApplicator>
             <AppGuard>
@@ -50,6 +52,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           </ThemeApplicator>
           <Toaster />
         </UserProfileProvider>
+      </SpectateProvider>
     </FirebaseClientProvider>
   );
 }

@@ -7,6 +7,7 @@ import { useUser } from '@/firebase/auth/use-user';
 import { getFirestore } from 'firebase/firestore';
 import { useFirebaseApp } from '@/firebase/provider';
 import { useToast } from '@/hooks/use-toast';
+import { useSpectate } from './spectate-context';
 
 export interface UserProfile {
   uid: string;
@@ -52,6 +53,7 @@ const UserProfileContext = createContext<UserProfileContextType | undefined>(und
 
 export function UserProfileProvider({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useUser();
+  const { spectatingUser } = useSpectate();
   const app = useFirebaseApp();
   const firestore = getFirestore(app);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -86,13 +88,15 @@ export function UserProfileProvider({ children }: { children: React.ReactNode })
       return;
     }
 
-    if (!user) {
+    const uidToFetch = spectatingUser ? spectatingUser.uid : user?.uid;
+
+    if (!uidToFetch) {
       setProfile(null);
       setLoading(false);
       return;
     }
 
-    const docRef = doc(firestore, 'users', user.uid);
+    const docRef = doc(firestore, 'users', uidToFetch);
     const unsubscribe = onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
@@ -113,10 +117,10 @@ export function UserProfileProvider({ children }: { children: React.ReactNode })
         }
         
         setProfile({
-          uid: user.uid,
-          displayName: user.displayName || data.displayName || 'Student',
-          email: user.email || data.email || '',
-          photoURL: user.photoURL || data.photoURL || null,
+          uid: uidToFetch,
+          displayName: data.displayName || 'Student',
+          email: data.email || '',
+          photoURL: data.photoURL || null,
           classLevel: data.classLevel,
           targetYear: data.targetYear,
           exam: data.exam,
@@ -151,15 +155,20 @@ export function UserProfileProvider({ children }: { children: React.ReactNode })
     });
 
     return () => unsubscribe();
-  }, [user, authLoading, firestore]);
+  }, [user, authLoading, firestore, spectatingUser]);
   
   const updateProfileSetting = useCallback(async (key: string, value: any) => {
-    if (!user) {
+    const uidToUpdate = spectatingUser ? spectatingUser.uid : user?.uid;
+    if (!uidToUpdate) {
         throw new Error("User must be logged in to update settings.");
     }
-    const userDocRef = doc(firestore, 'users', user.uid);
+    if(spectatingUser) {
+        toast({ variant: 'destructive', title: 'Read-only mode', description: 'Cannot modify user settings while spectating.' });
+        return;
+    }
+    const userDocRef = doc(firestore, 'users', uidToUpdate);
     await setDoc(userDocRef, { [key]: value }, { merge: true });
-  }, [user, firestore]);
+  }, [user, firestore, spectatingUser, toast]);
 
 
   const value = useMemo(() => ({ profile, loading, updateProfileSetting }), [profile, loading, updateProfileSetting]);
