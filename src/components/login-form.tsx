@@ -25,6 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { useFirebaseApp } from '@/firebase/provider';
 import { DeveloperCredit } from '@/components/developer-credit';
+import { PatternLock } from './ui/pattern-lock';
 
 
 const passwordFormSchema = z.object({
@@ -37,11 +38,17 @@ const pinFormSchema = z.object({
   pin: z.string().length(4, { message: 'PIN must be 4 digits.' }),
 });
 
+const patternFormSchema = z.object({
+  email: z.string().email({ message: 'Please enter a valid email.' }),
+  pattern: z.string().min(1, { message: 'Pattern is required.' }),
+});
+
 
 export default function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [patternError, setPatternError] = useState(false);
   
   const app = useFirebaseApp();
   const auth = getAuth(app);
@@ -55,17 +62,24 @@ export default function LoginForm() {
     resolver: zodResolver(pinFormSchema),
     defaultValues: { email: '', pin: '' },
   });
+  
+  const patternForm = useForm<z.infer<typeof patternFormSchema>>({
+    resolver: zodResolver(patternFormSchema),
+    defaultValues: { email: '', pattern: '' },
+  });
 
-  async function onPasswordSubmit(values: z.infer<typeof passwordFormSchema>) {
+  async function performLogin(email: string, secret: string) {
     setIsLoading(true);
+    setPatternError(false);
     try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
+      await signInWithEmailAndPassword(auth, email, secret);
       toast({
         title: 'Login Successful!',
         description: 'Redirecting to your dashboard...',
       });
       router.push('/dashboard');
     } catch (error: any) {
+      setPatternError(true);
       toast({
         variant: 'destructive',
         title: 'Login Failed',
@@ -76,12 +90,20 @@ export default function LoginForm() {
     }
   }
 
+  function onPasswordSubmit(values: z.infer<typeof passwordFormSchema>) {
+    performLogin(values.email, values.password);
+  }
+
   function onPinSubmit(values: z.infer<typeof pinFormSchema>) {
     toast({
         title: 'How PIN Sign-In Works',
         description: "PIN sign-in is a quick-unlock feature for returning users. To enable it, sign in with your password and set a PIN in your profile. On your next visit from this device, you'll be prompted to unlock the app with just your PIN.",
         duration: 15000,
     });
+  }
+
+  function onPatternSubmit(values: z.infer<typeof patternFormSchema>) {
+    performLogin(values.email, values.pattern);
   }
 
   return (
@@ -98,8 +120,9 @@ export default function LoginForm() {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="password" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="password">Password</TabsTrigger>
+                    <TabsTrigger value="pattern">Pattern</TabsTrigger>
                     <TabsTrigger value="pin">PIN</TabsTrigger>
                 </TabsList>
                 <TabsContent value="password" className="pt-6">
@@ -136,6 +159,48 @@ export default function LoginForm() {
                           Sign In
                         </Button>
                       </form>
+                    </Form>
+                </TabsContent>
+                <TabsContent value="pattern" className="pt-6">
+                    <Form {...patternForm}>
+                        <form onSubmit={patternForm.handleSubmit(onPatternSubmit)} className="space-y-6">
+                            <FormField
+                                control={patternForm.control}
+                                name="email"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Email</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="you@example.com" {...field} disabled={isLoading} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={patternForm.control}
+                                name="pattern"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Login Pattern</FormLabel>
+                                        <FormControl>
+                                             <PatternLock 
+                                                onChange={(pattern) => {
+                                                    field.onChange(pattern.join('-'));
+                                                    setPatternError(false);
+                                                }}
+                                                error={patternError}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <Button type="submit" className="w-full text-lg" disabled={isLoading}>
+                                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Sign In with Pattern
+                            </Button>
+                        </form>
                     </Form>
                 </TabsContent>
                 <TabsContent value="pin" className="pt-6">

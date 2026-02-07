@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -26,18 +25,38 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { useFirebaseApp, useFirestore } from '@/firebase/provider';
 import { DeveloperCredit } from './developer-credit';
+import { RadioGroup, RadioGroupItem } from './ui/radio-group';
+import { PatternLock } from './ui/pattern-lock';
 
 
 const formSchema = z.object({
   name: z.string().min(1, { message: 'Name is required.' }),
   email: z.string().email({ message: 'Please enter a valid email.' }),
-  password: z.string().min(8, { message: 'Password must be at least 8 characters.' }),
+  authMethod: z.enum(['password', 'pattern']),
+  password: z.string(),
+}).refine(data => {
+    if (data.authMethod === 'password') {
+        return data.password.length >= 8;
+    }
+    return true;
+}, {
+    message: 'Password must be at least 8 characters.',
+    path: ['password'],
+}).refine(data => {
+    if (data.authMethod === 'pattern') {
+        return data.password.split('-').length >= 4;
+    }
+    return true;
+}, {
+    message: 'Pattern must connect at least 4 dots.',
+    path: ['password'],
 });
 
 export default function SignupForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [patternError, setPatternError] = useState(false);
   
   const app = useFirebaseApp();
   const auth = getAuth(app);
@@ -48,12 +67,16 @@ export default function SignupForm() {
     defaultValues: {
       name: '',
       email: '',
+      authMethod: 'password',
       password: '',
     },
   });
+  
+  const authMethod = form.watch('authMethod');
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
+    setPatternError(false);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       
@@ -88,6 +111,9 @@ export default function SignupForm() {
       router.push('/onboarding');
 
     } catch (error: any) {
+      if (authMethod === 'pattern') {
+          setPatternError(true);
+      }
       toast({
         variant: 'destructive',
         title: 'Sign-up Failed',
@@ -139,19 +165,67 @@ export default function SignupForm() {
                     </FormItem>
                   )}
                 />
+                
+                <FormField
+                    control={form.control}
+                    name="authMethod"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Authentication Method</FormLabel>
+                             <FormControl>
+                                <RadioGroup
+                                onValueChange={(value) => {
+                                    field.onChange(value);
+                                    form.setValue('password', '');
+                                    form.clearErrors('password');
+                                    setPatternError(false);
+                                }}
+                                defaultValue={field.value}
+                                className="flex space-x-4 pt-2"
+                                >
+                                <FormItem className="flex items-center space-x-2 space-y-0">
+                                    <FormControl>
+                                    <RadioGroupItem value="password" />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">Password</FormLabel>
+                                </FormItem>
+                                <FormItem className="flex items-center space-x-2 space-y-0">
+                                    <FormControl>
+                                    <RadioGroupItem value="pattern" />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">Pattern</FormLabel>
+                                </FormItem>
+                                </RadioGroup>
+                            </FormControl>
+                        </FormItem>
+                    )}
+                />
+
                 <FormField
                   control={form.control}
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Password</FormLabel>
+                      <FormLabel>{authMethod === 'password' ? 'Password' : 'Draw Your Pattern'}</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} disabled={isLoading} />
+                        {authMethod === 'password' ? (
+                            <Input type="password" placeholder="••••••••" {...field} disabled={isLoading} />
+                        ) : (
+                            <PatternLock 
+                                onChange={(pattern) => {
+                                    field.onChange(pattern.join('-'));
+                                    setPatternError(false);
+                                }}
+                                onEnd={() => form.trigger('password')}
+                                error={patternError || !!form.formState.errors.password}
+                            />
+                        )}
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
                 <Button type="submit" className="w-full text-lg" disabled={isLoading}>
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Sign Up
