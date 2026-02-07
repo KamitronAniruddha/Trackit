@@ -51,12 +51,8 @@ export function SpectateProvider({ children }: { children: React.ReactNode }) {
     try {
       // 1. Update user doc with admin ID
       const userDocRef = doc(firestore, 'users', targetUser.uid);
-      const newPermissionPayload = {
-          ...targetUser.spectatePermission,
-          spectatingAdminId: adminUser.uid
-      };
       await updateDoc(userDocRef, {
-        spectatePermission: newPermissionPayload
+        'spectatePermission.spectatingAdminId': adminUser.uid
       });
 
       // 2. Create a log entry
@@ -90,8 +86,7 @@ export function SpectateProvider({ children }: { children: React.ReactNode }) {
   const stopSpectating = useCallback(async () => {
     if (!spectatingUser) return;
     const spectatedUserUid = spectatingUser.uid;
-    const spectatedUserPermission = spectatingUser.spectatePermission; // Capture before clearing state
-
+    
     // Clear state immediately for responsiveness
     sessionStorage.removeItem('spectatingUser');
     sessionStorage.removeItem('spectateLogId');
@@ -99,18 +94,10 @@ export function SpectateProvider({ children }: { children: React.ReactNode }) {
     setSpectateLogId(null);
 
     try {
-      if (!spectatedUserPermission) {
-          throw new Error("Spectated user permission object not found in state.");
-      }
       // 1. Update user doc to remove admin ID
       const userDocRef = doc(firestore, 'users', spectatedUserUid);
-      const newPermissionPayload = {
-          ...spectatedUserPermission,
-          spectatingAdminId: null,
-      };
-
       await updateDoc(userDocRef, {
-        spectatePermission: newPermissionPayload,
+        'spectatePermission.spectatingAdminId': null
       });
 
       // 2. Update log entry with end time
