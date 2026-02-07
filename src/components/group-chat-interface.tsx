@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 import { AddGroupMemberDialog } from './add-group-member-dialog';
 import { useRouter } from 'next/navigation';
+import { useSpectate } from '@/contexts/spectate-context';
 
 interface GroupMessage {
     id: string;
@@ -39,6 +40,7 @@ interface Group {
 export function GroupChatInterface({ groupId }: { groupId: string }) {
     const firestore = useFirestore();
     const { profile: currentUserProfile, loading: profileLoading } = useUserProfile();
+    const { isSpectating } = useSpectate();
     const [messages, setMessages] = useState<GroupMessage[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const [group, setGroup] = useState<Group | null>(null);
@@ -124,7 +126,7 @@ export function GroupChatInterface({ groupId }: { groupId: string }) {
 
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newMessage.trim() || !currentUserProfile || !group) return;
+        if (!newMessage.trim() || !currentUserProfile || !group || isSpectating) return;
 
         setIsSending(true);
         const text = newMessage.trim();
@@ -345,11 +347,11 @@ export function GroupChatInterface({ groupId }: { groupId: string }) {
                         <Input
                             value={newMessage}
                             onChange={(e) => setNewMessage(e.target.value)}
-                            placeholder="Type a message..."
+                            placeholder={isSpectating ? "Messaging disabled while spectating" : "Type a message..."}
                             autoComplete="off"
-                            disabled={isSending}
+                            disabled={isSending || isSpectating}
                         />
-                        <Button type="submit" size="icon" disabled={!newMessage.trim() || isSending}>
+                        <Button type="submit" size="icon" disabled={!newMessage.trim() || isSending || isSpectating}>
                             {isSending ? <Loader2 className="animate-spin"/> : <Send />}
                             <span className="sr-only">Send message</span>
                         </Button>

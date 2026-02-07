@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -28,6 +27,7 @@ import {
   Eye,
   LogOut as LogOutIcon,
 } from 'lucide-react';
+import { useState } from 'react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -57,6 +57,7 @@ import { Button } from '@/components/ui/button';
 import { DeveloperCredit } from './developer-credit';
 import { cn } from '@/lib/utils';
 import { useSpectate } from '@/contexts/spectate-context';
+import { useToast } from './hooks/use-toast';
 
 const SpectatingAdminBanner = () => {
   const { isSpectating, spectatingUser, stopSpectating } = useSpectate();
@@ -82,8 +83,10 @@ const SpectatingAdminBanner = () => {
 };
 
 const BeingSpectatedUserBanner = () => {
-    const { profile } = useUserProfile();
+    const { profile, updateProfileSetting } = useUserProfile();
     const { isSpectating } = useSpectate();
+    const { toast } = useToast();
+    const [isRevoking, setIsRevoking] = useState(false);
     
     // Don't show this banner to the admin who is spectating
     if (isSpectating) return null;
@@ -91,10 +94,46 @@ const BeingSpectatedUserBanner = () => {
     const isBeingSpectated = !!profile?.spectatePermission?.spectatingAdminId;
     if (!isBeingSpectated) return null;
 
+    const handleRevoke = async () => {
+        setIsRevoking(true);
+        try {
+          await updateProfileSetting('spectatePermission', {
+            status: 'none',
+            expiresAt: null,
+            grantedAt: null,
+            spectatingAdminId: null,
+          });
+          toast({
+            title: 'Permission Revoked',
+            description: 'The admin can no longer view your dashboard.',
+          });
+        } catch (error: any) {
+          toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Could not revoke permission. Please try again.',
+          });
+        } finally {
+          setIsRevoking(false);
+        }
+    };
+
     return (
-         <div className="bg-blue-500 text-blue-50 p-2 text-center text-sm font-semibold flex items-center justify-center gap-2">
-            <Eye className="h-4 w-4" />
-            <span>An admin is currently viewing your dashboard in read-only mode.</span>
+         <div className="bg-blue-500 text-blue-50 p-2 text-center text-sm font-semibold flex items-center justify-center gap-4">
+            <div className="flex items-center gap-2">
+                <Eye className="h-4 w-4" />
+                <span>An admin is currently viewing your dashboard in read-only mode.</span>
+            </div>
+            <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto px-2 py-1 text-blue-50 hover:bg-blue-600 hover:text-blue-50"
+                onClick={handleRevoke}
+                disabled={isRevoking}
+            >
+                {isRevoking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogOutIcon className="mr-2 h-4 w-4" />}
+                Stop Session
+            </Button>
         </div>
     );
 }
