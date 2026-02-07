@@ -38,6 +38,9 @@ export const useUser = (options: UseUserOptions = {}) => {
 
   const signOut = async () => {
     await firebaseSignOut(auth);
+    if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('isUnlocked');
+    }
     // The onAuthStateChanged listener will handle the user state update and redirection if configured.
   };
 

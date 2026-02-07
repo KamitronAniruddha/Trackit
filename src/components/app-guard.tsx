@@ -4,8 +4,9 @@ import { BannedScreen } from '@/components/banned-screen';
 import { Loader2 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useUser } from '@/firebase/auth/use-user';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { PinLockScreen } from './pin-lock-screen';
 
 const publicRoutes = ['/login', '/signup'];
 
@@ -15,6 +16,11 @@ export function AppGuard({ children }: { children: React.ReactNode }) {
     const { toast } = useToast();
     const pathname = usePathname();
     const router = useRouter();
+
+    const [isUnlocked, setIsUnlocked] = useState(() => {
+        if (typeof window === 'undefined') return false;
+        return sessionStorage.getItem('isUnlocked') === 'true';
+    });
 
     const loading = profileLoading || userLoading;
 
@@ -34,6 +40,12 @@ export function AppGuard({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         if (loading) {
             return; // Wait until user and profile are loaded
+        }
+
+        // If logged in, redirect away from public pages
+        if (user && publicRoutes.includes(pathname)) {
+            router.replace('/dashboard');
+            return;
         }
 
         // If not logged in, redirect to login for any non-public page
@@ -94,6 +106,22 @@ export function AppGuard({ children }: { children: React.ReactNode }) {
     
     // For authenticated users, perform access control checks
     if (user && profile) {
+        // --- NEW PIN LOCK LOGIC ---
+        const hasPin = !!profile.loginCode;
+        if (hasPin && !isUnlocked) {
+            return (
+                <PinLockScreen
+                    onUnlock={() => {
+                        if (typeof window !== 'undefined') {
+                            sessionStorage.setItem('isUnlocked', 'true');
+                        }
+                        setIsUnlocked(true);
+                    }}
+                />
+            );
+        }
+        // --- END OF NEW LOGIC ---
+
         // Handle banned users
         const isBanned = profile.isBanned === true;
         const banExpires = profile.banExpiresAt ? profile.banExpiresAt.toDate() : null;

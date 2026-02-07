@@ -72,6 +72,10 @@ const passwordFormSchema = z.object({
     path: ['confirmPassword'],
 });
 
+const pinFormSchema = z.object({
+    pin: z.string().length(4, { message: 'PIN must be exactly 4 digits.' }).regex(/^\d{4}$/, { message: 'PIN must only contain digits.' }),
+});
+
 const getInitialStateForExam = (exam: 'NEET' | 'JEE', syllabusData: SyllabusData | null): ProgressState => {
     const initialState = {} as ProgressState;
     if (!syllabusData) return initialState;
@@ -115,6 +119,7 @@ export function ProfileClient() {
     const [isSwitchingExam, setIsSwitchingExam] = useState(false);
     const [isUpdatingAppearance, setIsUpdatingAppearance] = useState(false);
     const [isResetting, setIsResetting] = useState(false);
+    const [isSettingPin, setIsSettingPin] = useState(false);
 
 
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -140,6 +145,13 @@ export function ProfileClient() {
         },
     });
 
+    const pinForm = useForm<z.infer<typeof pinFormSchema>>({
+        resolver: zodResolver(pinFormSchema),
+        defaultValues: {
+            pin: profile?.loginCode || '',
+        },
+    });
+
     useEffect(() => {
         if (profile) {
             form.reset({
@@ -147,8 +159,11 @@ export function ProfileClient() {
                 classLevel: profile.classLevel,
                 targetYear: profile.targetYear,
             });
+            pinForm.reset({
+                pin: profile.loginCode || '',
+            });
         }
-    }, [profile, form]);
+    }, [profile, form, pinForm]);
   
     async function onSubmit(values: z.infer<typeof profileFormSchema>) {
         if (!auth.currentUser) {
@@ -310,6 +325,22 @@ export function ProfileClient() {
         }
     }
     
+    async function onPinSubmit(values: z.infer<typeof pinFormSchema>) {
+        setIsSettingPin(true);
+        try {
+            await updateProfileSetting('loginCode', values.pin);
+            toast({ title: 'PIN Updated!', description: 'Your new PIN has been set.' });
+        } catch (error: any) {
+            toast({
+                variant: 'destructive',
+                title: 'PIN Update Failed',
+                description: 'Could not save your PIN.',
+            });
+        } finally {
+            setIsSettingPin(false);
+        }
+    }
+
     const handleSwitchExam = async () => {
         if (!auth.currentUser || !profile || !syllabuses) {
             toast({
@@ -615,37 +646,39 @@ export function ProfileClient() {
                     </CardContent>
                 </Card>
                 <div className="space-y-8">
-                    {profile?.role === 'admin' && (
-                        <Card className="bg-card/50 backdrop-blur-sm">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <ShieldCheck />
-                                    Admin Controls
-                                </CardTitle>
-                                <CardDescription>
-                                    Special settings for administrators.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex items-center justify-between rounded-lg border p-4">
-                                    <div className="space-y-0.5">
-                                        <Label className="text-base">Simulate Demo Mode</Label>
-                                        <p className="text-sm text-muted-foreground">
-                                            Experience the app as a demo user to test feature locks.
-                                        </p>
-                                    </div>
-                                    <Switch
-                                        checked={profile.accountStatus === 'demo'}
-                                        onCheckedChange={(checked) =>
-                                            handleSettingChange('accountStatus', checked ? 'demo' : 'active')
-                                        }
-                                        disabled={isUpdatingAppearance}
-                                        aria-label="Toggle demo mode simulation"
+                    <Card className="bg-card/50 backdrop-blur-sm">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <KeySquare />
+                                Quick Access PIN
+                            </CardTitle>
+                            <CardDescription>
+                                Set a 4-digit PIN to quickly unlock the app instead of using your password.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                             <Form {...pinForm}>
+                                <form onSubmit={pinForm.handleSubmit(onPinSubmit)} className="flex items-center gap-4">
+                                    <FormField
+                                        control={pinForm.control}
+                                        name="pin"
+                                        render={({ field }) => (
+                                            <FormItem className="flex-1">
+                                                <FormControl>
+                                                    <Input type="password" maxLength={4} placeholder="&#x2022;&#x2022;&#x2022;&#x2022;" {...field} disabled={isSettingPin} className="font-mono text-lg tracking-[0.5em]" />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
                                     />
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
+                                    <Button type="submit" disabled={isSettingPin || !pinForm.formState.isDirty}>
+                                        {isSettingPin && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        Save PIN
+                                    </Button>
+                                </form>
+                            </Form>
+                        </CardContent>
+                    </Card>
                     <Card className="bg-card/50 backdrop-blur-sm">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
@@ -694,27 +727,6 @@ export function ProfileClient() {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            {/* <div>
-                                <Label htmlFor="font-select">Font</Label>
-                                <Select
-                                    value={profile?.font || 'poppins'}
-                                    onValueChange={(value) => handleSettingChange('font', value)}
-                                    disabled={isUpdatingAppearance || !profile}
-                                >
-                                    <SelectTrigger id="font-select" className="mt-2">
-                                        <SelectValue placeholder="Select a font" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="poppins">Poppins</SelectItem>
-                                        <SelectItem value="inter">Inter</SelectItem>
-                                        <SelectItem value="lato">Lato</SelectItem>
-                                        <SelectItem value="montserrat">Montserrat</SelectItem>
-                                        <SelectItem value="roboto">Roboto</SelectItem>
-                                        <SelectItem value="open-sans">Open Sans</SelectItem>
-                                        <SelectItem value="noto-sans">Noto Sans</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div> */}
                             {isUpdatingAppearance && <div className="flex items-center text-sm text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Applying changes...</div>}
                         </CardContent>
                     </Card>

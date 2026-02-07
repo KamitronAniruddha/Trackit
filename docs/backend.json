@@ -110,6 +110,10 @@
             "type": "string",
             "enum": ["pending_approval", "active", "demo"],
             "description": "The current status of the user's account."
+        },
+        "loginCode": {
+            "type": "string",
+            "description": "A 4-digit PIN for quick app access."
         }
       },
       "required": [
