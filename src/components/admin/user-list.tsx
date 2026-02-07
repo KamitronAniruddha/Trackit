@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -62,10 +61,13 @@ export function UserList() {
         const q = query(usersRef, orderBy('displayName'));
 
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
-            const userList = querySnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-            } as UserWithId));
+            const userList = querySnapshot.docs
+                .map(doc => ({
+                    id: doc.id,
+                    ...doc.data(),
+                } as UserWithId))
+                .filter(user => user.isDeleted !== true); // Filter out deleted users
+            
             setUsers(userList);
             setLoading(false);
             setError(null);
@@ -185,7 +187,7 @@ export function UserList() {
                     </TableHeader>
                     <TableBody>
                         {users.map(user => (
-                            <TableRow key={user.id} className={cn(user.isDeleted && 'bg-destructive/5 opacity-60')}>
+                            <TableRow key={user.id}>
                                 <TableCell>
                                     <div className="flex items-center gap-3">
                                         <Avatar className="h-8 w-8">
@@ -194,7 +196,7 @@ export function UserList() {
                                                 {user.displayName?.charAt(0).toUpperCase() || 'U'}
                                             </AvatarFallback>
                                         </Avatar>
-                                        <span className={cn("font-medium", user.isDeleted && "line-through")}>{user.displayName}</span>
+                                        <span className="font-medium">{user.displayName}</span>
                                     </div>
                                 </TableCell>
                                 <TableCell>{user.email}</TableCell>
@@ -202,9 +204,7 @@ export function UserList() {
                                     <Badge variant="outline">{user.exam || 'N/A'}</Badge>
                                 </TableCell>
                                 <TableCell>
-                                    {user.isDeleted ? (
-                                        <Badge variant="destructive">Deleted</Badge>
-                                    ) : user.isBanned ? (
+                                    {user.isBanned ? (
                                         <Badge variant="destructive">Banned</Badge>
                                     ) : (
                                         <Badge variant={user.onboardingCompleted ? 'secondary' : 'outline'}>
@@ -249,13 +249,13 @@ export function UserList() {
                                                     </>
                                                 )}
 
-                                                {!user.isDeleted && (profile.role === 'admin' || (profile.role === 'subadmin' && user.role === 'user')) && (
+                                                {(profile.role === 'admin' || (profile.role === 'subadmin' && user.role === 'user')) && (
                                                     user.isBanned 
                                                         ? <DropdownMenuItem onClick={() => handleUnbanUser(user)}>Unban User</DropdownMenuItem>
                                                         : <DropdownMenuItem onSelect={() => setBanUser(user)}>Ban User</DropdownMenuItem>
                                                 )}
 
-                                                {profile.role === 'admin' && !user.isDeleted && (
+                                                {profile.role === 'admin' && (
                                                     <>
                                                         <DropdownMenuSeparator />
                                                         <DropdownMenuItem onSelect={() => setUserToDelete(user)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
