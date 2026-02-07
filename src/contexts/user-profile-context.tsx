@@ -34,6 +34,12 @@ export interface UserProfile {
   accountStatus?: 'pending_approval' | 'active' | 'demo';
   loginCode?: string;
   authMethod?: 'password' | 'pattern';
+  spectatePermission?: {
+    status: 'granted' | 'none';
+    expiresAt?: Timestamp;
+    grantedAt?: Timestamp;
+    spectatingAdminId?: string | null;
+  };
 }
 
 interface UserProfileContextType {
@@ -132,6 +138,7 @@ export function UserProfileProvider({ children }: { children: React.ReactNode })
           accountStatus: accountStatus,
           loginCode: data.loginCode,
           authMethod: data.authMethod || 'password',
+          spectatePermission: data.spectatePermission,
         });
       } else {
         setProfile(null);

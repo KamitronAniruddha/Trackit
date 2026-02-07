@@ -1,6 +1,7 @@
+
 'use client';
 
-import { KeySquare, Edit, Loader2, ShieldCheck, Camera, BookCopy, Palette, AlertTriangle, Gem } from 'lucide-react';
+import { KeySquare, Edit, Loader2, ShieldCheck, Camera, BookCopy, Palette, AlertTriangle, Gem, Eye } from 'lucide-react';
 import { Button } from './ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from './ui/skeleton';
@@ -56,6 +57,7 @@ import { useSyllabus, type SyllabusData } from '@/contexts/syllabus-context';
 import { Switch } from './ui/switch';
 import { PremiumCodeActivator } from './premium-code-activator';
 import { PatternLock } from './ui/pattern-lock';
+import { SpectatePermissionManager } from './profile/spectate-permission-manager';
 
 
 const profileFormSchema = z.object({
@@ -652,40 +654,7 @@ export function ProfileClient() {
                     </CardContent>
                 </Card>
                 <div className="space-y-8">
-                    <Card className="bg-card/50 backdrop-blur-sm">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <KeySquare />
-                                Quick Access PIN
-                            </CardTitle>
-                            <CardDescription>
-                                Set a 4-digit PIN to quickly unlock the app instead of using your password.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                             <Form {...pinForm}>
-                                <form onSubmit={pinForm.handleSubmit(onPinSubmit)} className="flex items-center gap-4">
-                                    <FormField
-                                        control={pinForm.control}
-                                        name="pin"
-                                        render={({ field }) => (
-                                            <FormItem className="flex-1">
-                                                <FormControl>
-                                                    <Input type="password" maxLength={4} placeholder="&#x2022;&#x2022;&#x2022;&#x2022;" {...field} disabled={isSettingPin} className="font-mono text-lg tracking-[0.5em]" />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <Button type="submit" disabled={isSettingPin || !pinForm.formState.isDirty}>
-                                        {isSettingPin && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        Save PIN
-                                    </Button>
-                                </form>
-                            </Form>
-                        </CardContent>
-                    </Card>
-                    <Card className="bg-card/50 backdrop-blur-sm">
+                     <Card className="bg-card/50 backdrop-blur-sm">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <Palette />
@@ -739,51 +708,35 @@ export function ProfileClient() {
                     <Card className="bg-card/50 backdrop-blur-sm">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <BookCopy />
-                                Change Exam
-                            </CardTitle>
-                            <CardDescription>
-                                Switching exams will reset your progress. This action is permanent.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4 text-center">
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button className="w-full" variant="outline" disabled={!profile || isSwitchingExam}>
-                                        {isSwitchingExam && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        Switch to {profile?.exam === 'NEET' ? 'JEE' : 'NEET'}
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            This action is permanent and cannot be undone. Switching to the {profile?.exam === 'NEET' ? 'JEE' : 'NEET'} track will
-                                            <strong className="font-bold text-destructive"> completely reset all your current syllabus progress.</strong>
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel disabled={isSwitchingExam}>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={handleSwitchExam} disabled={isSwitchingExam} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                            {isSwitchingExam && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                            Yes, reset my progress and switch
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </CardContent>
-                    </Card>
-                    <Card className="bg-card/50 backdrop-blur-sm">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <ShieldCheck />
+                                <KeySquare />
                                 Account Security
                             </CardTitle>
                             <CardDescription>
-                            Manage your account security settings.
+                                Manage your account login and security settings.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
+                            <Form {...pinForm}>
+                                <form onSubmit={pinForm.handleSubmit(onPinSubmit)} className="flex items-center gap-4">
+                                    <FormField
+                                        control={pinForm.control}
+                                        name="pin"
+                                        render={({ field }) => (
+                                            <FormItem className="flex-1">
+                                                <FormLabel>Quick Access PIN</FormLabel>
+                                                <FormControl>
+                                                    <Input type="password" maxLength={4} placeholder="&#x2022;&#x2022;&#x2022;&#x2022;" {...field} disabled={isSettingPin} className="font-mono text-lg tracking-[0.5em]" />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <Button type="submit" disabled={isSettingPin || !pinForm.formState.isDirty}>
+                                        {isSettingPin && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        Save PIN
+                                    </Button>
+                                </form>
+                            </Form>
                             <Dialog open={isPasswordDialogOpen} onOpenChange={(isOpen) => {
                                 setIsPasswordDialogOpen(isOpen);
                                 if (!isOpen) {
@@ -792,8 +745,7 @@ export function ProfileClient() {
                                 }
                             }}>
                                 <DialogTrigger asChild>
-                                    <Button type="button" className="w-full">
-                                        <KeySquare className="mr-2 h-4 w-4" />
+                                    <Button type="button" className="w-full" variant="outline">
                                         Change {profile?.authMethod === 'pattern' ? 'Login Pattern' : 'Password'}
                                     </Button>
                                 </DialogTrigger>
@@ -915,6 +867,57 @@ export function ProfileClient() {
                                 {isSendingReset && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 Send Password Reset Email
                             </Button>
+                        </CardContent>
+                    </Card>
+                    <Card className="bg-card/50 backdrop-blur-sm">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-blue-500">
+                                <Eye />
+                                Admin Spectate Permission
+                            </CardTitle>
+                            <CardDescription>
+                                Grant temporary, read-only access to your account to an admin for support or mentoring.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <SpectatePermissionManager />
+                        </CardContent>
+                    </Card>
+                    <Card className="bg-card/50 backdrop-blur-sm">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <BookCopy />
+                                Change Exam
+                            </CardTitle>
+                            <CardDescription>
+                                Switching exams will reset your progress. This action is permanent.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4 text-center">
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button className="w-full" variant="outline" disabled={!profile || isSwitchingExam}>
+                                        {isSwitchingExam && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        Switch to {profile?.exam === 'NEET' ? 'JEE' : 'NEET'}
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This action is permanent and cannot be undone. Switching to the {profile?.exam === 'NEET' ? 'JEE' : 'NEET'} track will
+                                            <strong className="font-bold text-destructive"> completely reset all your current syllabus progress.</strong>
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel disabled={isSwitchingExam}>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleSwitchExam} disabled={isSwitchingExam} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                            {isSwitchingExam && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                            Yes, reset my progress and switch
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
                         </CardContent>
                     </Card>
                     <Card className="bg-destructive/10 border-destructive/20">
