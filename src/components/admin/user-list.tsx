@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -222,7 +223,7 @@ export function UserList() {
                                     )}
                                 </TableCell>
                                 <TableCell className="text-right">
-                                    {profile && user.id !== profile.uid && (
+                                    {profile && user.id !== profile.uid && user.role !== 'admin' && (
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
                                                 <Button variant="ghost" className="h-8 w-8 p-0">
