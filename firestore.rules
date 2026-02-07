@@ -91,13 +91,11 @@ service cloud.firestore {
         )) ||
 
         // Case C: Admin starting/stopping a spectate session
-        (isSpectatePermissionActiveOnSelf() &&
+        (
+          isSpectatePermissionActiveOnSelf() &&
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['spectatePermission']) &&
-          // Admin can only change spectatingAdminId, not other permission fields.
-          // Compare timestamp seconds instead of objects to avoid type issues.
-          request.resource.data.spectatePermission.status == resource.data.spectatePermission.status &&
-          request.resource.data.spectatePermission.expiresAt.seconds == resource.data.spectatePermission.expiresAt.seconds &&
-          request.resource.data.spectatePermission.grantedAt.seconds == resource.data.spectatePermission.grantedAt.seconds
+          // Enforce that only the spectatingAdminId can be changed within the permission object
+          request.resource.data.spectatePermission.diff(resource.data.spectatePermission).affectedKeys().hasOnly(['spectatingAdminId'])
         );
       
       // DELETE: Disallow hard deletes. Soft deletes are handled via an 'update'.
