@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NeetProgressLogo } from '@/components/icons';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
@@ -26,10 +27,16 @@ import { useFirebaseApp } from '@/firebase/provider';
 import { DeveloperCredit } from '@/components/developer-credit';
 
 
-const formSchema = z.object({
+const passwordFormSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
   password: z.string().min(1, { message: 'Password is required.' }),
 });
+
+const pinFormSchema = z.object({
+  email: z.string().email({ message: 'Please enter a valid email.' }),
+  pin: z.string().length(4, { message: 'PIN must be 4 digits.' }),
+});
+
 
 export default function LoginForm() {
   const router = useRouter();
@@ -39,15 +46,17 @@ export default function LoginForm() {
   const app = useFirebaseApp();
   const auth = getAuth(app);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
+  const passwordForm = useForm<z.infer<typeof passwordFormSchema>>({
+    resolver: zodResolver(passwordFormSchema),
+    defaultValues: { email: '', password: '' },
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  const pinForm = useForm<z.infer<typeof pinFormSchema>>({
+    resolver: zodResolver(pinFormSchema),
+    defaultValues: { email: '', pin: '' },
+  });
+
+  async function onPasswordSubmit(values: z.infer<typeof passwordFormSchema>) {
     setIsLoading(true);
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
@@ -67,6 +76,14 @@ export default function LoginForm() {
     }
   }
 
+  function onPinSubmit(values: z.infer<typeof pinFormSchema>) {
+    toast({
+        title: 'How PIN Sign-In Works',
+        description: "PIN sign-in is a quick-unlock feature for returning users. To enable it, sign in with your password and set a PIN in your profile. On your next visit from this device, you'll be prompted to unlock the app with just your PIN.",
+        duration: 15000,
+    });
+  }
+
   return (
     <main className="flex min-h-screen w-full flex-col items-center justify-center bg-transparent p-4">
       <Card className="relative w-full max-w-md overflow-hidden border-primary/20 shadow-2xl shadow-primary/10">
@@ -77,43 +94,86 @@ export default function LoginForm() {
               <NeetProgressLogo className="h-16 w-16" />
             </div>
             <CardTitle className="text-3xl font-bold tracking-tight">Welcome Back</CardTitle>
-            <CardDescription>Enter your credentials to access your dashboard.</CardDescription>
+            <CardDescription>Sign in to access your dashboard.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input placeholder="you@example.com" {...field} disabled={isLoading} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} disabled={isLoading} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button type="submit" className="w-full text-lg" disabled={isLoading}>
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Log In
-                </Button>
-              </form>
-            </Form>
+            <Tabs defaultValue="password" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="password">Password</TabsTrigger>
+                    <TabsTrigger value="pin">PIN</TabsTrigger>
+                </TabsList>
+                <TabsContent value="password" className="pt-6">
+                    <Form {...passwordForm}>
+                      <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-6">
+                        <FormField
+                          control={passwordForm.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Email</FormLabel>
+                              <FormControl>
+                                <Input placeholder="you@example.com" {...field} disabled={isLoading} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={passwordForm.control}
+                          name="password"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Password</FormLabel>
+                              <FormControl>
+                                <Input type="password" placeholder="••••••••" {...field} disabled={isLoading} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <Button type="submit" className="w-full text-lg" disabled={isLoading}>
+                          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Sign In
+                        </Button>
+                      </form>
+                    </Form>
+                </TabsContent>
+                <TabsContent value="pin" className="pt-6">
+                    <Form {...pinForm}>
+                        <form onSubmit={pinForm.handleSubmit(onPinSubmit)} className="space-y-6">
+                            <FormField
+                                control={pinForm.control}
+                                name="email"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Email</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="you@example.com" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={pinForm.control}
+                                name="pin"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>4-Digit PIN</FormLabel>
+                                        <FormControl>
+                                            <Input type="password" maxLength={4} placeholder="••••" {...field} className="font-mono tracking-[0.5em] text-center"/>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <Button type="submit" className="w-full text-lg">
+                                Sign In with PIN
+                            </Button>
+                        </form>
+                    </Form>
+                </TabsContent>
+            </Tabs>
             <div className="mt-6 text-center text-sm">
               Don&apos;t have an account?{' '}
               <Link href="/signup" className="font-semibold text-primary underline-offset-4 hover:underline">
