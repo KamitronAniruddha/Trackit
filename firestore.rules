@@ -64,8 +64,9 @@ service cloud.firestore {
           // Sub-case B2: User granting/revoking spectate permission
           (
             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['spectatePermission']) &&
-            // User cannot set the spectatingAdminId themselves. It must be null or same as before.
-            request.resource.data.spectatePermission.get('spectatingAdminId', null) == resource.data.spectatePermission.get('spectatingAdminId', null)
+            // A user can grant/revoke permission, but cannot assign a spectating admin.
+            // They can only set spectatingAdminId to null. An admin will set their own ID.
+            request.resource.data.spectatePermission.spectatingAdminId == null
           ) ||
 
           // Sub-case B3: Premium activation via one-time code.
