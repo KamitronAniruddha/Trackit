@@ -29,12 +29,13 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // NEW SPECTATE HELPER
     function canSpectate(userId) {
         let user = get(/databases/$(database)/documents/users/$(userId)).data;
         return hasAdminPrivileges() &&
                'spectatePermission' in user &&
+               user.spectatePermission != null &&
                user.spectatePermission.status == 'granted' &&
+               user.spectatePermission.expiresAt != null &&
                user.spectatePermission.expiresAt > request.time;
     }
 
@@ -80,10 +81,11 @@ service cloud.firestore {
         // Case C: Admin starting/stopping a spectate session
         (canSpectate(userId) &&
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['spectatePermission']) &&
-          // Admin can only change spectatingAdminId, not other permission fields
+          // Admin can only change spectatingAdminId, not other permission fields.
+          // Compare timestamp seconds instead of objects to avoid type issues.
           request.resource.data.spectatePermission.status == resource.data.spectatePermission.status &&
-          request.resource.data.spectatePermission.expiresAt == resource.data.spectatePermission.expiresAt &&
-          request.resource.data.spectatePermission.grantedAt == resource.data.spectatePermission.grantedAt
+          request.resource.data.spectatePermission.expiresAt.seconds == resource.data.spectatePermission.expiresAt.seconds &&
+          request.resource.data.spectatePermission.grantedAt.seconds == resource.data.spectatePermission.grantedAt.seconds
         );
       
       // DELETE: Disallow hard deletes. Soft deletes are handled via an 'update'.
@@ -117,7 +119,7 @@ service cloud.firestore {
     }
     
     match /spectateLogs/{logId} {
-        allow create: if isAdmin();
+        allow create: if hasAdminPrivileges();
         allow read, write, delete: if false;
     }
 
