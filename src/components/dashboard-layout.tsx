@@ -27,6 +27,7 @@ import {
   Timer,
   Eye,
   LogOut as LogOutIcon,
+  Palette,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -38,6 +39,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
 } from '@/components/ui/dropdown-menu';
 import {
   SidebarProvider,
@@ -292,7 +295,26 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             )}
           </div>
           <div className="flex items-center gap-2">
-            {/* Right side header content can go here */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <Palette className="h-4 w-4" />
+                  <span className="sr-only">Toggle theme</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Select Theme</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuRadioGroup 
+                  value={profile?.theme || 'default'} 
+                  onValueChange={(theme) => updateProfileSetting('theme', theme)}
+                >
+                  <DropdownMenuRadioItem value="default">Default</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="violet">Violet</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="green">Green</DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">{children}</main>
