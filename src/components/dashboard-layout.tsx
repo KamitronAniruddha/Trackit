@@ -29,6 +29,7 @@ import {
   LogOut as LogOutIcon,
   Palette,
   Compass,
+  BrainCircuit,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -186,6 +187,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     { href: '/dashboard/messages', label: 'Messages', icon: MessageSquare, isPremium: true },
     { href: '/dashboard/agram', label: 'A-gram', icon: Camera, isPremium: true },
     { href: '/dashboard/discover', label: 'Discover', icon: Compass, isPremium: true },
+    { href: '/dashboard/wall', label: 'Brain Dump', icon: BrainCircuit, isPremium: true },
     { href: '/dashboard/interpretation', label: 'Interpretation', icon: PieChart, isPremium: true },
     { href: '/dashboard/music', label: 'Music', icon: Music, isPremium: false }, // Music is free
   ];

@@ -280,7 +280,23 @@ service cloud.firestore {
       // Any signed-in user can "consume" a code by deleting it as part of a transaction.
       allow delete: if isSignedIn();
     }
+
+    match /brainDumps/{dumpId} {
+      // Any signed-in user can create a note, but they cannot attach user data.
+      // The note must have a valid expiry date set in the future.
+      allow create: if isSignedIn()
+                    && request.resource.data.keys().hasOnly(['text', 'mood', 'subject', 'createdAt', 'expiresAt'])
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() > 0 && request.resource.data.text.size() < 300
+                    && request.resource.data.mood is string
+                    && request.resource.data.createdAt == request.time
+                    && request.resource.data.expiresAt > request.time;
+      
+      // Anyone signed-in can read non-expired notes. Client must query for non-expired notes.
+      allow list, get: if isSignedIn();
+
+      // No one can update or delete notes. This should be handled by a backend process (e.g. TTL policy).
+      allow update, delete: if false;
+    }
   }
 }
-
-    
