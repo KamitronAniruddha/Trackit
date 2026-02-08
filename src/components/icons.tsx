@@ -10,7 +10,7 @@ export function NeetProgressLogo(props: SVGProps<SVGSVGElement>) {
       {...props}
     >
       <defs>
-        <linearGradient id="logo-gradient" x1="50%" x2="50%" y1="0%" y2="100%">
+        <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="hsl(var(--primary))" />
           <stop offset="100%" stopColor="hsl(var(--accent))" />
         </linearGradient>
@@ -21,9 +21,12 @@ export function NeetProgressLogo(props: SVGProps<SVGSVGElement>) {
         dy=".3em"
         textAnchor="middle"
         fontFamily="cursive"
-        fontSize="100"
+        fontSize="110"
         fontWeight="bold"
         fill="url(#logo-gradient)"
+        stroke="hsl(var(--primary-foreground))"
+        strokeWidth="1"
+        paintOrder="stroke"
       >
         Ani
       </text>
