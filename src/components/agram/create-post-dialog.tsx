@@ -77,6 +77,7 @@ export function CreatePostDialog({ isOpen, onOpenChange }: CreatePostDialogProps
                 imageUrl: values.imageUrl,
                 caption: values.caption || "",
                 likes: [],
+                commentCount: 0,
                 createdAt: serverTimestamp(),
             });
             

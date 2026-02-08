@@ -545,6 +545,10 @@
           "description": "An array of user UIDs who have liked the post.",
           "items": { "type": "string" }
         },
+        "commentCount": {
+          "type": "number",
+          "description": "The number of comments on the post."
+        },
         "createdAt": {
           "type": "string",
           "format": "date-time",

@@ -17,6 +17,7 @@ export interface Post {
     imageUrl: string;
     caption: string;
     likes: string[];
+    commentCount?: number;
     createdAt: Timestamp;
 }
 
