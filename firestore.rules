@@ -199,8 +199,8 @@ service cloud.firestore {
       allow list: if isSignedIn();
       allow get: if isSignedIn() || canSpectatePostOwner();
       allow create: if isOwner(request.resource.data.userId);
-      // Allow anyone to like (update likes array), but only owner to edit caption
-      allow update: if (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])) ||
+      // Allow anyone to like/comment (update likes/commentCount array), but only owner to edit caption
+      allow update: if (isSignedIn() && (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']) || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount']))) ||
                       (isPostOwner() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['caption']));
       allow delete: if isPostOwner();
 
