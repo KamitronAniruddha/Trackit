@@ -43,8 +43,7 @@ service cloud.firestore {
     // Used for WRITE rules on /users/{userId} to avoid get() on the same document.
     function isSpectatePermissionActiveOnSelf() {
         return hasAdminPrivileges() &&
-               'spectatePermission' in resource.data &&
-               resource.data.spectatePermission != null &&
+               resource.data.get('spectatePermission', null) != null &&
                resource.data.spectatePermission.status == 'granted' &&
                resource.data.spectatePermission.expiresAt != null &&
                resource.data.spectatePermission.expiresAt > request.time;
@@ -92,10 +91,9 @@ service cloud.firestore {
 
         // Case C: Admin starting/stopping a spectate session
         (
-          isSpectatePermissionActiveOnSelf() &&
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['spectatePermission']) &&
-          // Enforce that only the spectatingAdminId can be changed within the permission object
-          request.resource.data.spectatePermission.diff(resource.data.spectatePermission).affectedKeys().hasOnly(['spectatingAdminId'])
+            isSpectatePermissionActiveOnSelf() &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['spectatePermission']) &&
+            request.resource.data.spectatePermission.diff(resource.data.spectatePermission).affectedKeys().hasOnly(['spectatingAdminId'])
         );
       
       // DELETE: Disallow hard deletes. Soft deletes are handled via an 'update'.
@@ -115,6 +113,12 @@ service cloud.firestore {
       match /mistakes/{mistakeId} {
         allow read: if isOwner(userId) || canSpectate(userId);
         allow write: if isOwner(userId);
+      }
+
+      match /pointLogs/{logId} {
+        allow read: if isOwner(userId) || canSpectate(userId);
+        allow create: if isOwner(request.resource.data.userId);
+        allow update, delete: if false;
       }
     }
 

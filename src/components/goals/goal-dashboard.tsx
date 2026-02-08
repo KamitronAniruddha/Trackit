@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useUserProfile } from '@/contexts/user-profile-context';
 import { useFirestore } from '@/firebase/provider';
-import { doc, onSnapshot, runTransaction, setDoc } from 'firebase/firestore';
+import { doc, onSnapshot, runTransaction, setDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -101,6 +101,16 @@ export function GoalDashboard() {
           newStreak = 1;
         }
 
+        // Log base points
+        const pointsLogRef = doc(collection(firestore, 'users', profile.uid, 'pointLogs'));
+        transaction.set(pointsLogRef, {
+            userId: profile.uid,
+            points: 10,
+            reason: 'Daily Goal Completion',
+            date: todayStr,
+            createdAt: serverTimestamp(),
+        });
+        
         let pointsEarned = 10;
         let bonusMessage = '';
         
@@ -110,6 +120,16 @@ export function GoalDashboard() {
             const bonus = streakMilestones[newStreak];
             pointsEarned += bonus;
             bonusMessage = ` You earned a ${bonus} point bonus for your ${newStreak}-day streak!`;
+
+            // Log bonus points
+            const bonusLogRef = doc(collection(firestore, 'users', profile.uid, 'pointLogs'));
+            transaction.set(bonusLogRef, {
+                userId: profile.uid,
+                points: bonus,
+                reason: `${newStreak}-Day Streak Bonus`,
+                date: todayStr,
+                createdAt: serverTimestamp(),
+            });
         }
         
         totalPoints += pointsEarned;

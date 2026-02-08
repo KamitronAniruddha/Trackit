@@ -483,6 +483,36 @@
         "completed"
       ]
     },
+    "PointLog": {
+      "title": "Point Log",
+      "description": "A log of points earned by a user.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who earned the points."
+        },
+        "points": {
+          "type": "number",
+          "description": "The number of points earned."
+        },
+        "reason": {
+          "type": "string",
+          "description": "The reason points were awarded (e.g., 'Daily Goal Completion', '7-Day Streak Bonus')."
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "The date for which the points are associated (YYYY-MM-DD)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the points were logged."
+        }
+      },
+      "required": ["userId", "points", "reason", "date", "createdAt"]
+    },
     "Post": {
       "title": "A-gram Post",
       "description": "Represents a user-created post in A-gram.",
@@ -668,6 +698,12 @@
         "$ref": "#/backend/entities/Mistake"
       },
       "description": "A user's personal collection of logged mistakes."
+    },
+    "/users/{userId}/pointLogs/{logId}": {
+      "schema": {
+        "$ref": "#/backend/entities/PointLog"
+      },
+      "description": "A user's log of earned points."
     },
     "/userProgress/{userId}": {
       "schema": {
