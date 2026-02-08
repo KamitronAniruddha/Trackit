@@ -22,7 +22,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NeetProgressLogo } from '@/components/icons';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { useFirebaseApp } from '@/firebase/provider';
 import { DeveloperCredit } from '@/components/developer-credit';
 import { PatternLock } from './ui/pattern-lock';
@@ -49,6 +49,7 @@ export default function LoginForm() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [patternError, setPatternError] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   
   const app = useFirebaseApp();
   const auth = getAuth(app);
@@ -148,7 +149,26 @@ export default function LoginForm() {
                             <FormItem>
                               <FormLabel>Password</FormLabel>
                               <FormControl>
-                                <Input type="password" placeholder="••••••••" {...field} disabled={isLoading} />
+                                <div className="relative">
+                                  <Input 
+                                    type={showPassword ? 'text' : 'password'}
+                                    placeholder="••••••••" 
+                                    {...field} 
+                                    disabled={isLoading}
+                                    className="pr-10"
+                                  />
+                                  <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="absolute top-1/2 right-1 h-8 w-8 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                      onClick={() => setShowPassword(prev => !prev)}
+                                      disabled={isLoading}
+                                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                  >
+                                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                                  </Button>
+                                </div>
                               </FormControl>
                               <FormMessage />
                             </FormItem>

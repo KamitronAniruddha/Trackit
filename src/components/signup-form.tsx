@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -23,7 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { NeetProgressLogo } from '@/components/icons';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { useFirebaseApp, useFirestore } from '@/firebase/provider';
 import { DeveloperCredit } from './developer-credit';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
@@ -58,6 +57,7 @@ export default function SignupForm() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [patternError, setPatternError] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   
   const app = useFirebaseApp();
   const auth = getAuth(app);
@@ -211,7 +211,26 @@ export default function SignupForm() {
                       <FormLabel>{authMethod === 'password' ? 'Password' : 'Draw Your Pattern'}</FormLabel>
                       <FormControl>
                         {authMethod === 'password' ? (
-                            <Input type="password" placeholder="••••••••" {...field} disabled={isLoading} />
+                            <div className="relative">
+                                <Input
+                                    type={showPassword ? 'text' : 'password'}
+                                    placeholder="••••••••"
+                                    {...field}
+                                    disabled={isLoading}
+                                    className="pr-10"
+                                />
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="absolute top-1/2 right-1 h-8 w-8 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                    onClick={() => setShowPassword(prev => !prev)}
+                                    disabled={isLoading}
+                                    aria-label={showPassword ? "Hide password" : "Show password"}
+                                >
+                                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                                </Button>
+                            </div>
                         ) : (
                             <PatternLock 
                                 onChange={(pattern) => {
