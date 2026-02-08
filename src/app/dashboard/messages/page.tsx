@@ -2,22 +2,35 @@
 'use client';
 import { GroupList } from "@/components/group-list";
 import { PremiumFeatureLock } from "@/components/premium-lock";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUserProfile } from "@/contexts/user-profile-context";
+import { DirectMessageList } from "@/components/direct-message-list";
 
 export default function MessagesPage() {
     const { profile } = useUserProfile();
 
     if (!profile?.isPremium) {
-        return <PremiumFeatureLock featureName="Group Messages" description="Collaborate with your peers, share doubts, and study together in groups." />;
+        return <PremiumFeatureLock featureName="Messaging" description="Collaborate with your peers in groups and chat directly with other users." />;
     }
     
     return (
         <div className="flex flex-col gap-6">
              <div>
-                <h1 className="text-3xl font-bold tracking-tight">Group Messages</h1>
-                <p className="text-muted-foreground">Your group conversations.</p>
+                <h1 className="text-3xl font-bold tracking-tight">Messages</h1>
+                <p className="text-muted-foreground">Your conversations.</p>
             </div>
-            <GroupList />
+            <Tabs defaultValue="groups" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="groups">Groups</TabsTrigger>
+                    <TabsTrigger value="directs">Directs</TabsTrigger>
+                </TabsList>
+                <TabsContent value="groups" className="mt-4">
+                    <GroupList />
+                </TabsContent>
+                <TabsContent value="directs" className="mt-4">
+                    <DirectMessageList />
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }

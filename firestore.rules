@@ -186,6 +186,26 @@ service cloud.firestore {
           allow update, delete: if false;
       }
     }
+    
+    match /conversations/{conversationId} {
+        function isConversationMember() {
+            return isSignedIn() && resource.data.memberIds.hasAny([request.auth.uid]);
+        }
+        
+        allow get: if isConversationMember();
+        allow list: if isSignedIn(); // Secured by client query `array-contains`
+        allow create: if isSignedIn() && request.resource.data.memberIds.hasAny([request.auth.uid]);
+        allow update: if isConversationMember();
+        allow delete: if false;
+
+        match /messages/{messageId} {
+            function isParentConversationMember() {
+                return isSignedIn() && get(/databases/$(database)/documents/conversations/$(conversationId)).data.memberIds.hasAny([request.auth.uid]);
+            }
+            allow list, get, create: if isParentConversationMember();
+            allow update, delete: if false;
+        }
+    }
 
     match /posts/{postId} {
       function isPostOwner() {
@@ -228,6 +248,20 @@ service cloud.firestore {
         allow delete: if isSignedIn() && get(/databases/$(database)/documents/follows/$(followId)).data.followerId == request.auth.uid;
         
         // UPDATE: Disallow updates.
+        allow update: if false;
+    }
+    
+    match /followRequests/{requestId} {
+        // CREATE: A user can create a request if they are the sender.
+        allow create: if isSignedIn() && request.resource.data.fromUserId == request.auth.uid;
+
+        // READ: A user can read requests sent to them.
+        allow list: if isSignedIn(); // Secured by client query
+        allow get: if isSignedIn() && (get(/databases/$(database)/documents/followRequests/$(requestId)).data.toUserId == request.auth.uid || get(/databases/$(database)/documents/followRequests/$(requestId)).data.fromUserId == request.auth.uid);
+
+        // DELETE: The recipient of the request can delete it (accept/decline), or the sender can cancel it.
+        allow delete: if isSignedIn() && (get(/databases/$(database)/documents/followRequests/$(requestId)).data.toUserId == request.auth.uid || get(/databases/$(database)/documents/followRequests/$(requestId)).data.fromUserId == request.auth.uid);
+        
         allow update: if false;
     }
 

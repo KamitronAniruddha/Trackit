@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { Post } from "@/lib/types";
@@ -14,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { FollowButton } from "../follow-button";
 import { CommentSheet } from "./comment-sheet";
+import { MessageButton } from "../message-button";
 
 export function PostCard({ post }: { post: Post }) {
     const { profile } = useUserProfile();
@@ -61,7 +63,10 @@ export function PostCard({ post }: { post: Post }) {
                             )}
                         </div>
                     </div>
-                    <FollowButton targetUserId={post.userId} />
+                    <div className="flex items-center gap-2">
+                        <MessageButton targetUserId={post.userId} />
+                        <FollowButton targetUserId={post.userId} />
+                    </div>
                 </CardHeader>
                 <CardContent className="p-0">
                     <div className="relative aspect-square w-full">

@@ -602,7 +602,95 @@
           }
         },
         "required": ["followerId", "followedId"]
-      },
+    },
+    "FollowRequest": {
+        "title": "Follow Request",
+        "description": "Represents a request from one user to follow another.",
+        "type": "object",
+        "properties": {
+            "fromUserId": {
+            "type": "string",
+            "description": "The UID of the user sending the request."
+            },
+            "fromUserName": {
+            "type": "string",
+            "description": "The display name of the user sending the request."
+            },
+            "fromUserPhotoURL": {
+                "type": "string",
+                "format": "uri"
+            },
+            "toUserId": {
+            "type": "string",
+            "description": "The UID of the user receiving the request."
+            },
+            "status": {
+            "type": "string",
+            "enum": ["pending"],
+            "description": "The status of the request."
+            }
+        },
+        "required": ["fromUserId", "toUserId", "status"]
+    },
+    "Conversation": {
+        "title": "Private Conversation",
+        "description": "Represents a private chat session between two users.",
+        "type": "object",
+        "properties": {
+            "memberIds": {
+                "type": "array",
+                "description": "Array containing the two user UIDs in the conversation.",
+                "items": { "type": "string" }
+            },
+            "membersInfo": {
+                "type": "object",
+                "description": "Denormalized user info for quick display.",
+                "additionalProperties": {
+                    "type": "object",
+                    "properties": {
+                        "displayName": { "type": "string" },
+                        "photoURL": { "type": "string", "format": "uri" }
+                    }
+                }
+            },
+            "lastMessage": {
+                "type": "string",
+                "description": "The text of the last message sent in the conversation."
+            },
+            "lastMessageAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Timestamp of the last message."
+            },
+            "createdAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "The timestamp when the conversation was initiated."
+            }
+        },
+        "required": ["memberIds", "membersInfo", "createdAt"]
+    },
+    "PrivateMessage": {
+        "title": "Private Message",
+        "description": "Represents a single message within a private conversation.",
+        "type": "object",
+        "properties": {
+            "senderId": {
+            "type": "string",
+            "description": "The UID of the message sender."
+            },
+            "text": {
+            "type": "string",
+            "description": "The content of the message."
+            },
+            "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The timestamp when the message was sent."
+            }
+        },
+        "required": ["senderId", "text", "createdAt"]
+    },
     "ContactSubmission": {
       "title": "Contact Form Submission",
       "description": "Stores a submission from the contact form.",
@@ -752,6 +840,18 @@
     "/follows/{followId}": {
         "schema": { "$ref": "#/backend/entities/Follow" },
         "description": "Stores all follow relationships. Each document represents one user following another."
+    },
+    "/followRequests/{requestId}": {
+        "schema": { "$ref": "#/backend/entities/FollowRequest" },
+        "description": "Stores pending follow requests between users."
+    },
+    "/conversations/{conversationId}": {
+        "schema": { "$ref": "#/backend/entities/Conversation" },
+        "description": "Collection of private conversations between two users."
+    },
+    "/conversations/{conversationId}/messages/{messageId}": {
+        "schema": { "$ref": "#/backend/entities/PrivateMessage" },
+        "description": "A subcollection of messages within a private conversation."
     },
     "/premiumCodes/{codeId}": {
       "schema": {

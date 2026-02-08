@@ -2,11 +2,12 @@
 'use client';
 import { PostFeed } from "@/components/agram/post-feed";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Bell, Plus } from "lucide-react";
 import { useState } from "react";
 import { CreatePostDialog } from "@/components/agram/create-post-dialog";
 import { useUserProfile } from "@/contexts/user-profile-context";
 import { PremiumFeatureLock } from "@/components/premium-lock";
+import { FollowRequestsPopover } from "@/components/agram/follow-requests-popover";
 
 export default function AgramPage() {
     const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -26,10 +27,13 @@ export default function AgramPage() {
                             Share your moments and connect with the community.
                         </p>
                     </div>
-                    <Button onClick={() => setIsCreateOpen(true)}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        New Post
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <FollowRequestsPopover />
+                        <Button onClick={() => setIsCreateOpen(true)}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            New Post
+                        </Button>
+                    </div>
                 </div>
                 <PostFeed />
             </div>

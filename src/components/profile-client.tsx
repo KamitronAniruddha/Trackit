@@ -1,11 +1,11 @@
 
 'use client';
 
-import { KeySquare, Edit, Loader2, ShieldCheck, Camera, BookCopy, Palette, AlertTriangle, Gem, Eye } from 'lucide-react';
+import { KeySquare, Edit, Loader2, ShieldCheck, Camera, BookCopy, Palette, AlertTriangle, Gem, Eye, Users } from 'lucide-react';
 import { Button } from './ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from './ui/skeleton';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useUser } from '@/firebase/auth/use-user';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -46,7 +46,7 @@ import { useState, useEffect, useRef } from 'react';
 import { updateProfile as updateAuthProfile, sendPasswordResetEmail, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { useAuth, useFirestore, useStorage } from '@/firebase/provider';
-import { doc, setDoc, writeBatch } from 'firebase/firestore';
+import { doc, setDoc, writeBatch, collection, query, where, onSnapshot } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
@@ -58,6 +58,7 @@ import { Switch } from './ui/switch';
 import { PremiumCodeActivator } from './premium-code-activator';
 import { PatternLock } from './ui/pattern-lock';
 import { SpectatePermissionManager } from './profile/spectate-permission-manager';
+import { FollowListDialog } from './profile/follow-list-dialog';
 
 
 const profileFormSchema = z.object({
@@ -113,6 +114,12 @@ export function ProfileClient() {
     const storage = useStorage();
     const router = useRouter();
 
+    const [followerCount, setFollowerCount] = useState(0);
+    const [followingCount, setFollowingCount] = useState(0);
+    const [isFollowCountLoading, setIsFollowCountLoading] = useState(true);
+    const [isFollowListOpen, setIsFollowListOpen] = useState(false);
+    const [followListInitialTab, setFollowListInitialTab] = useState<'followers' | 'following'>('followers');
+
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
     const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -166,8 +173,25 @@ export function ProfileClient() {
             pinForm.reset({
                 pin: profile.loginCode || '',
             });
+
+            setIsFollowCountLoading(true);
+            const followsRef = collection(firestore, 'follows');
+            
+            const followersQuery = query(followsRef, where('followedId', '==', profile.uid));
+            const followingQuery = query(followsRef, where('followerId', '==', profile.uid));
+
+            const unsubFollowers = onSnapshot(followersQuery, (snap) => setFollowerCount(snap.size));
+            const unsubFollowing = onSnapshot(followingQuery, (snap) => setFollowingCount(snap.size));
+            
+            setIsFollowCountLoading(false);
+
+            return () => {
+                unsubFollowers();
+                unsubFollowing();
+            };
+
         }
-    }, [profile, form, pinForm]);
+    }, [profile, form, pinForm, firestore]);
   
     async function onSubmit(values: z.infer<typeof profileFormSchema>) {
         if (!auth.currentUser) {
@@ -458,9 +482,10 @@ export function ProfileClient() {
         }
     };
 
-    const isLoading = isProfileLoading || syllabusLoading;
+    const isLoading = isProfileLoading || syllabusLoading || isFollowCountLoading;
     
     return (
+        <>
         <div className="space-y-8">
             {!isLoading && profile && !profile.isPremium && (
                  <Card className="bg-gradient-to-r from-primary/10 via-card to-accent/10 border-primary/20 shadow-lg">
@@ -482,7 +507,7 @@ export function ProfileClient() {
                 <Card className="bg-card/50 backdrop-blur-sm flex flex-col">
                     <CardHeader>
                         <CardTitle>User Details</CardTitle>
-                        <CardDescription>Your personal information.</CardDescription>
+                        <CardDescription>Your personal information and stats.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4 flex-grow">
                     {isLoading ? (
@@ -509,7 +534,7 @@ export function ProfileClient() {
                             </div>
                         ) : profile ? (
                             <>
-                                <div className="flex justify-center py-4">
+                                <div className="flex flex-col items-center justify-center py-4 gap-4">
                                     <div className="relative">
                                         <Avatar className="h-24 w-24 border-4 border-primary/20">
                                             <AvatarImage src={profile.photoURL ?? undefined} alt={profile.displayName} />
@@ -536,26 +561,34 @@ export function ProfileClient() {
                                             {isUploading ? <Loader2 className="animate-spin" /> : <Camera className="h-4 w-4" />}
                                         </Button>
                                     </div>
+                                    <div className="text-center">
+                                        <h3 className="text-2xl font-bold">{profile.displayName}</h3>
+                                        <p className="text-muted-foreground">{profile.email}</p>
+                                    </div>
+                                    <div className="flex items-center gap-6 text-center">
+                                        <button onClick={() => { setFollowListInitialTab('followers'); setIsFollowListOpen(true);}} className="hover:bg-muted p-2 rounded-md transition-colors">
+                                            <p className="text-2xl font-bold">{followerCount}</p>
+                                            <p className="text-sm text-muted-foreground">Followers</p>
+                                        </button>
+                                        <button onClick={() => { setFollowListInitialTab('following'); setIsFollowListOpen(true);}} className="hover:bg-muted p-2 rounded-md transition-colors">
+                                            <p className="text-2xl font-bold">{followingCount}</p>
+                                            <p className="text-sm text-muted-foreground">Following</p>
+                                        </button>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-sm font-medium text-muted-foreground">Name</p>
-                                    <p className="text-lg font-semibold">{profile.displayName}</p>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-muted-foreground">Email</p>
-                                    <p className="text-lg font-semibold">{profile.email}</p>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-muted-foreground">Exam</p>
-                                    <p className="text-lg font-semibold">{profile.exam}</p>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-muted-foreground">Class Level</p>
-                                    <p className="text-lg font-semibold">{profile.classLevel}</p>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-muted-foreground">Target Year</p>
-                                    <p className="text-lg font-semibold">{profile.targetYear}</p>
+                                <div className="space-y-4 pt-4 border-t">
+                                    <div>
+                                        <p className="text-sm font-medium text-muted-foreground">Exam</p>
+                                        <p className="text-lg font-semibold">{profile.exam}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-medium text-muted-foreground">Class Level</p>
+                                        <p className="text-lg font-semibold">{profile.classLevel}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-medium text-muted-foreground">Target Year</p>
+                                        <p className="text-lg font-semibold">{profile.targetYear}</p>
+                                    </div>
                                 </div>
                             </>
                         ) : (
@@ -565,7 +598,7 @@ export function ProfileClient() {
                         )
                     }
                     </CardContent>
-                    <CardContent className="flex justify-end">
+                    <CardFooter className="flex justify-end">
                         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                             <DialogTrigger asChild>
                                 <Button type="button" variant="outline" disabled={!profile}>
@@ -651,7 +684,7 @@ export function ProfileClient() {
                                 </Form>
                             </DialogContent>
                         </Dialog>
-                    </CardContent>
+                    </CardFooter>
                 </Card>
                 <div className="space-y-8">
                      <Card className="bg-card/50 backdrop-blur-sm">
@@ -958,5 +991,7 @@ export function ProfileClient() {
                 </div>
             </div>
         </div>
+        {profile && <FollowListDialog isOpen={isFollowListOpen} onOpenChange={setIsFollowListOpen} user={profile} initialTab={followListInitialTab} />}
+        </>
     );
 }

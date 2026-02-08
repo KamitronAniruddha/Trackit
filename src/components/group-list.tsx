@@ -2,7 +2,7 @@
 'use client';
 import { useUserProfile } from "@/contexts/user-profile-context";
 import { useFirestore } from "@/firebase/provider";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
+import { collection, onSnapshot, query, where, orderBy } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import Link from 'next/link';
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,18 +37,12 @@ export function GroupList() {
         const groupsRef = collection(firestore, 'groups');
         const q = query(
             groupsRef,
-            where('memberIds', 'array-contains', currentUserProfile.uid)
+            where('memberIds', 'array-contains', currentUserProfile.uid),
+            orderBy('lastMessageAt', 'desc')
         );
 
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
             const groupList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Group));
-            
-            groupList.sort((a, b) => {
-                const dateA = a.lastMessageAt?.toDate()?.getTime() || 0;
-                const dateB = b.lastMessageAt?.toDate()?.getTime() || 0;
-                return dateB - dateA;
-            });
-
             setGroups(groupList);
             setLoading(false);
         }, (error) => {
@@ -82,7 +76,7 @@ export function GroupList() {
                     {!loading && groups.length > 0 && (
                         <div className="space-y-2">
                             {groups.map(group => (
-                                <Link href={`/dashboard/messages/${group.id}`} key={group.id} className="block">
+                                <Link href={`/dashboard/messages/group/${group.id}`} key={group.id} className="block">
                                     <div className="flex items-center gap-4 p-3 rounded-lg transition-colors hover:bg-muted">
                                         <Avatar className="h-12 w-12 border">
                                             <AvatarFallback>
@@ -98,7 +92,7 @@ export function GroupList() {
                                                     </p>
                                                 )}
                                             </div>
-                                            <p className="text-sm text-muted-foreground truncate">{group.lastMessage}</p>
+                                            <p className="text-sm text-muted-foreground truncate">{group.lastMessage || 'No messages yet'}</p>
                                         </div>
                                     </div>
                                 </Link>
