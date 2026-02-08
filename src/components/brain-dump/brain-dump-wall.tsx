@@ -12,6 +12,7 @@ import { StickyNote } from './sticky-note';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { useUserProfile } from '@/contexts/user-profile-context';
+import { useUser } from '@/firebase/auth/use-user';
 
 type Mood = 'stressed' | 'tired' | 'confused' | 'calm' | 'motivated';
 
@@ -26,6 +27,7 @@ const moods: { name: Mood; emoji: string; color: string }[] = [
 export function BrainDumpWall() {
     const firestore = useFirestore();
     const { profile, loading: profileLoading } = useUserProfile();
+    const { user, loading: userLoading } = useUser();
     const { toast } = useToast();
     const [notes, setNotes] = useState<BrainDumpNote[]>([]);
     const [loading, setLoading] = useState(true);
@@ -34,15 +36,17 @@ export function BrainDumpWall() {
     const [isPosting, setIsPosting] = useState(false);
 
     useEffect(() => {
-        if (profileLoading) {
+        // Rely on the direct auth state from useUser
+        if (userLoading) {
             setLoading(true);
             return;
         }
-        if (!profile) {
+        if (!user) {
             setLoading(false);
             return;
         }
 
+        // At this point, Firebase auth is ready.
         const notesRef = collection(firestore, 'brainDumps');
         const q = query(notesRef, where('expiresAt', '>', new Date()), orderBy('expiresAt', 'desc'));
 
@@ -63,7 +67,7 @@ export function BrainDumpWall() {
         });
 
         return () => unsubscribe();
-    }, [firestore, profile, profileLoading]);
+    }, [firestore, user, userLoading]);
     
     const handlePostNote = () => {
         if (!profile) {
@@ -102,6 +106,8 @@ export function BrainDumpWall() {
             });
     };
 
+    const overallLoading = loading || profileLoading;
+
     return (
         <div className="space-y-6">
              <div className="p-4 border rounded-lg bg-card/80 space-y-4">
@@ -130,16 +136,16 @@ export function BrainDumpWall() {
                             </Button>
                         ))}
                     </div>
-                    <Button onClick={handlePostNote} disabled={isPosting || newNote.trim().length === 0} className="w-full sm:w-auto">
+                    <Button onClick={handlePostNote} disabled={isPosting || newNote.trim().length === 0}>
                         {isPosting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                         Post Anonymously
                     </Button>
                 </div>
             </div>
             
-            {loading ? (
+            {overallLoading ? (
                 <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
-            ) : !profile ? (
+            ) : !user ? (
                 <div className="text-center py-16 text-muted-foreground bg-card/50 rounded-lg border border-dashed">
                    <h3 className="text-lg font-semibold">Please log in</h3>
                    <p className="text-sm mt-2">You need to be logged in to see the Brain Dump Wall.</p>
