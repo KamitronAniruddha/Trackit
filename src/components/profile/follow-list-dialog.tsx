@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect } from 'react';
 import { useFirestore } from '@/firebase/provider';
@@ -24,21 +23,42 @@ const UserList = ({ uids }: { uids: string[] }) => {
     const firestore = useFirestore();
 
     useEffect(() => {
-        if (uids.length === 0) {
-            setLoading(false);
-            setUsers([]);
-            return;
-        }
-        setLoading(true);
+        const fetchUsers = async () => {
+            if (uids.length === 0) {
+                setUsers([]);
+                setLoading(false);
+                return;
+            }
+            setLoading(true);
+            try {
+                const usersRef = collection(firestore, 'users');
+                const allUsers: UserProfile[] = [];
+                
+                // Firestore 'in' query can handle up to 30 elements
+                const promises = [];
+                for (let i = 0; i < uids.length; i += 30) {
+                    const chunk = uids.slice(i, i + 30);
+                    if (chunk.length > 0) {
+                        const q = query(usersRef, where(documentId(), 'in', chunk));
+                        promises.push(getDocs(q));
+                    }
+                }
 
-        const usersRef = collection(firestore, 'users');
-        const q = query(usersRef, where(documentId(), 'in', uids.slice(0, 10))); // Firestore 'in' query limit is 10
+                const snapshots = await Promise.all(promises);
+                snapshots.forEach(snapshot => {
+                    const userList = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile));
+                    allUsers.push(...userList);
+                });
+                
+                setUsers(allUsers);
+            } catch (error) {
+                console.error("Error fetching user list:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-        getDocs(q).then((snapshot) => {
-            const userList = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile));
-            setUsers(userList);
-            setLoading(false);
-        });
+        fetchUsers();
     }, [uids, firestore]);
 
     if (loading) {

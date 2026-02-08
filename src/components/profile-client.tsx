@@ -1,4 +1,3 @@
-
 'use client';
 
 import { KeySquare, Edit, Loader2, ShieldCheck, Camera, BookCopy, Palette, AlertTriangle, Gem, Eye, Users } from 'lucide-react';
@@ -180,16 +179,41 @@ export function ProfileClient() {
             const followersQuery = query(followsRef, where('followedId', '==', profile.uid));
             const followingQuery = query(followsRef, where('followerId', '==', profile.uid));
 
-            const unsubFollowers = onSnapshot(followersQuery, (snap) => setFollowerCount(snap.size));
-            const unsubFollowing = onSnapshot(followingQuery, (snap) => setFollowingCount(snap.size));
-            
-            setIsFollowCountLoading(false);
+            let followersInitialLoad = false;
+            let followingInitialLoad = false;
+
+            const checkInitialLoad = () => {
+                if (followersInitialLoad && followingInitialLoad) {
+                    setIsFollowCountLoading(false);
+                }
+            };
+
+            const unsubFollowers = onSnapshot(followersQuery, (snap) => {
+                setFollowerCount(snap.size);
+                if (!followersInitialLoad) {
+                    followersInitialLoad = true;
+                    checkInitialLoad();
+                }
+            }, () => {
+                followersInitialLoad = true;
+                checkInitialLoad();
+            });
+
+            const unsubFollowing = onSnapshot(followingQuery, (snap) => {
+                setFollowingCount(snap.size);
+                if (!followingInitialLoad) {
+                    followingInitialLoad = true;
+                    checkInitialLoad();
+                }
+            }, () => {
+                followingInitialLoad = true;
+                checkInitialLoad();
+            });
 
             return () => {
                 unsubFollowers();
                 unsubFollowing();
             };
-
         }
     }, [profile, form, pinForm, firestore]);
   
