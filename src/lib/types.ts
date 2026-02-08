@@ -42,6 +42,7 @@ export interface Conversation {
     lastMessage?: string;
     lastMessageAt?: Timestamp;
     lastMessageSenderId?: string;
+    lastMessageSenderName?: string;
 }
 
 export interface Group {
@@ -56,3 +57,5 @@ export interface Group {
     lastMessageSenderId?: string;
     lastMessageSenderName?: string;
 }
+
+    

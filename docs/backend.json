@@ -674,6 +674,10 @@
                 "type": "string",
                 "description": "The UID of the user who sent the last message."
             },
+            "lastMessageSenderName": {
+                "type": "string",
+                "description": "The display name of the user who sent the last message."
+            },
             "createdAt": {
               "type": "string",
               "format": "date-time",
@@ -877,3 +881,5 @@
     }
   }
 }
+
+    

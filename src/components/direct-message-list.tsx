@@ -9,19 +9,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, MessageCircle } from "lucide-react";
 import { formatDistanceToNow } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import type { Conversation } from "@/lib/types";
 
-interface Conversation {
-    id: string;
-    memberIds: string[];
-    membersInfo: {
-        [uid: string]: {
-            displayName: string;
-            photoURL?: string;
-        }
-    }
-    lastMessage?: string;
-    lastMessageAt?: { toDate: () => Date };
-}
 
 export function DirectMessageList() {
     const firestore = useFirestore();
@@ -75,6 +64,13 @@ export function DirectMessageList() {
                             const otherUserInfo = convo.membersInfo[otherUserId];
                             if (!otherUserInfo) return null;
 
+                            const lastMessagePrefix = convo.lastMessageSenderId === currentUserProfile?.uid
+                                ? 'You: '
+                                : '';
+                            const lastMessageText = convo.lastMessage
+                                ? `${lastMessagePrefix}${convo.lastMessage}`
+                                : 'No messages yet';
+
                             return (
                                 <Link href={`/dashboard/messages/direct/${convo.id}`} key={convo.id} className="block">
                                     <div className="flex items-center gap-4 p-3 rounded-lg transition-colors hover:bg-muted">
@@ -91,7 +87,7 @@ export function DirectMessageList() {
                                                     </p>
                                                 )}
                                             </div>
-                                            <p className="text-sm text-muted-foreground truncate">{convo.lastMessage || 'No messages yet'}</p>
+                                            <p className="text-sm text-muted-foreground truncate">{lastMessageText}</p>
                                         </div>
                                     </div>
                                 </Link>
@@ -103,3 +99,5 @@ export function DirectMessageList() {
         </Card>
     );
 }
+
+    

@@ -167,7 +167,7 @@ service cloud.firestore {
       allow get: if isGroupMember() || canSpectate(get(/databases/$(database)/documents/groups/$(groupId)).data.adminId);
       allow list: if isSignedIn(); // Secured by client query `array-contains`
       allow create: if isCreatingGroupAdmin() && request.auth.uid in request.resource.data.memberIds;
-      allow update: if isGroupAdmin() || (isGroupMember() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastMessage', 'lastMessageAt']));
+      allow update: if isGroupAdmin() || (isGroupMember() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastMessage', 'lastMessageAt', 'lastMessageSenderId', 'lastMessageSenderName']));
       allow delete: if isGroupAdmin();
 
       match /messages/{messageId} {
@@ -195,7 +195,7 @@ service cloud.firestore {
         allow get: if isConversationMember();
         allow list: if isSignedIn(); // Secured by client query `array-contains`
         allow create: if isSignedIn() && request.resource.data.memberIds.hasAny([request.auth.uid]);
-        allow update: if isConversationMember();
+        allow update: if isConversationMember() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastMessage', 'lastMessageAt', 'lastMessageSenderId', 'lastMessageSenderName']);
         allow delete: if false;
 
         match /messages/{messageId} {
@@ -282,3 +282,5 @@ service cloud.firestore {
     }
   }
 }
+
+    

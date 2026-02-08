@@ -108,10 +108,7 @@ export function DirectChatInterface({ conversationId }: { conversationId: string
             lastMessage: text,
             lastMessageAt: serverTimestamp(),
             lastMessageSenderId: currentUserProfile.uid,
-            [`membersInfo.${currentUserProfile.uid}`]: {
-                displayName: currentUserProfile.displayName,
-                photoURL: currentUserProfile.photoURL,
-            }
+            lastMessageSenderName: currentUserProfile.displayName,
         });
 
         try {
@@ -190,3 +187,5 @@ export function DirectChatInterface({ conversationId }: { conversationId: string
         </Card>
     );
 }
+
+    
