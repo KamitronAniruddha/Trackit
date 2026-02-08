@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { StickyNote } from './sticky-note';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { useUserProfile } from '@/contexts/user-profile-context';
 
 type Mood = 'stressed' | 'tired' | 'confused' | 'calm' | 'motivated';
 
@@ -24,6 +25,7 @@ const moods: { name: Mood; emoji: string; color: string }[] = [
 
 export function BrainDumpWall() {
     const firestore = useFirestore();
+    const { profile } = useUserProfile();
     const { toast } = useToast();
     const [notes, setNotes] = useState<BrainDumpNote[]>([]);
     const [loading, setLoading] = useState(true);
@@ -32,6 +34,11 @@ export function BrainDumpWall() {
     const [isPosting, setIsPosting] = useState(false);
 
     useEffect(() => {
+        if (!profile) {
+            setLoading(false);
+            return;
+        }
+
         const notesRef = collection(firestore, 'brainDumps');
         const q = query(notesRef, where('expiresAt', '>', new Date()), orderBy('expiresAt', 'desc'));
 
@@ -52,9 +59,13 @@ export function BrainDumpWall() {
         });
 
         return () => unsubscribe();
-    }, [firestore]);
+    }, [firestore, profile]);
     
     const handlePostNote = () => {
+        if (!profile) {
+            toast({ variant: 'destructive', title: 'Not Logged In', description: 'You must be logged in to post to the wall.'});
+            return;
+        }
         if (newNote.trim().length === 0) return;
         setIsPosting(true);
 
