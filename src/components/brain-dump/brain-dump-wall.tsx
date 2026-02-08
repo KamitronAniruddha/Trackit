@@ -25,7 +25,7 @@ const moods: { name: Mood; emoji: string; color: string }[] = [
 
 export function BrainDumpWall() {
     const firestore = useFirestore();
-    const { profile } = useUserProfile();
+    const { profile, loading: profileLoading } = useUserProfile();
     const { toast } = useToast();
     const [notes, setNotes] = useState<BrainDumpNote[]>([]);
     const [loading, setLoading] = useState(true);
@@ -34,6 +34,10 @@ export function BrainDumpWall() {
     const [isPosting, setIsPosting] = useState(false);
 
     useEffect(() => {
+        if (profileLoading) {
+            setLoading(true);
+            return;
+        }
         if (!profile) {
             setLoading(false);
             return;
@@ -59,7 +63,7 @@ export function BrainDumpWall() {
         });
 
         return () => unsubscribe();
-    }, [firestore, profile]);
+    }, [firestore, profile, profileLoading]);
     
     const handlePostNote = () => {
         if (!profile) {
@@ -133,18 +137,21 @@ export function BrainDumpWall() {
                 </div>
             </div>
             
-            {loading && <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>}
-
-            {!loading && notes.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {notes.map(note => <StickyNote key={note.id} note={note} />)}
-                </div>
-            )}
-
-            {!loading && notes.length === 0 && (
+            {loading ? (
+                <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
+            ) : !profile ? (
+                <div className="text-center py-16 text-muted-foreground bg-card/50 rounded-lg border border-dashed">
+                   <h3 className="text-lg font-semibold">Please log in</h3>
+                   <p className="text-sm mt-2">You need to be logged in to see the Brain Dump Wall.</p>
+               </div>
+            ) : notes.length === 0 ? (
                  <div className="text-center py-16 text-muted-foreground bg-card/50 rounded-lg border border-dashed">
                     <h3 className="text-lg font-semibold">The wall is clear</h3>
                     <p className="text-sm mt-2">Be the first to share a thought.</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {notes.map(note => <StickyNote key={note.id} note={note} />)}
                 </div>
             )}
         </div>
