@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -10,6 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { StickyNote } from './sticky-note';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 type Mood = 'stressed' | 'tired' | 'confused' | 'calm' | 'motivated';
 
@@ -41,38 +42,49 @@ export function BrainDumpWall() {
             } as BrainDumpNote));
             setNotes(notesList);
             setLoading(false);
-        }, (error) => {
-            console.error("Error fetching brain dumps:", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not load the wall. Check security rules.' });
+        }, async (serverError) => {
+            const permissionError = new FirestorePermissionError({
+                path: 'brainDumps',
+                operation: 'list'
+            }, serverError);
+            errorEmitter.emit('permission-error', permissionError);
             setLoading(false);
         });
 
         return () => unsubscribe();
-    }, [firestore, toast]);
+    }, [firestore]);
     
-    const handlePostNote = async () => {
+    const handlePostNote = () => {
         if (newNote.trim().length === 0) return;
         setIsPosting(true);
 
         const notesRef = collection(firestore, 'brainDumps');
         const now = new Date();
         const expiry = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+        
+        const newNoteData = {
+            text: newNote,
+            mood: selectedMood,
+            createdAt: serverTimestamp(),
+            expiresAt: Timestamp.fromDate(expiry)
+        };
 
-        try {
-            await addDoc(notesRef, {
-                text: newNote,
-                mood: selectedMood,
-                createdAt: serverTimestamp(),
-                expiresAt: Timestamp.fromDate(expiry)
+        addDoc(notesRef, newNoteData)
+            .then(() => {
+                setNewNote('');
+                toast({ title: 'Your thought is on the wall.', description: 'It will disappear in 24 hours.'});
+            })
+            .catch(async (serverError) => {
+                const permissionError = new FirestorePermissionError({
+                    path: notesRef.path,
+                    operation: 'create',
+                    requestResourceData: newNoteData,
+                }, serverError);
+                errorEmitter.emit('permission-error', permissionError);
+            })
+            .finally(() => {
+                setIsPosting(false);
             });
-            setNewNote('');
-            toast({ title: 'Your thought is on the wall.', description: 'It will disappear in 24 hours.'});
-        } catch (error: any) {
-            console.error("Error posting note:", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not post your thought. Check security rules.' });
-        } finally {
-            setIsPosting(false);
-        }
     };
 
     return (

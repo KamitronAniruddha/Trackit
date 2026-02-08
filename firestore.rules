@@ -289,7 +289,6 @@ service cloud.firestore {
                     && request.resource.data.text is string
                     && request.resource.data.text.size() > 0 && request.resource.data.text.size() < 300
                     && request.resource.data.mood is string
-                    && request.resource.data.createdAt == request.time
                     && request.resource.data.expiresAt > request.time;
       
       // Anyone signed-in can read non-expired notes. Client must query for non-expired notes.
