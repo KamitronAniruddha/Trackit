@@ -83,12 +83,13 @@ const StreakHistory = () => {
         const goalsRef = collection(firestore, 'users', profile.uid, 'dailyGoals');
         const q = query(
             goalsRef,
-            where('completed', '==', true),
             orderBy('date', 'desc')
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const goals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DailyGoal));
+            const goals = snapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() } as DailyGoal))
+                .filter(goal => goal.completed); // Filter for completed goals on the client side
             setCompletedGoals(goals);
             setLoading(false);
         }, (err) => {
