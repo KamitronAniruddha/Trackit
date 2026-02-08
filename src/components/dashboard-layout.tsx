@@ -310,8 +310,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   onValueChange={(theme) => updateProfileSetting('theme', theme)}
                 >
                   <DropdownMenuRadioItem value="default">Default</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="rose">Rose</DropdownMenuRadioItem>
                   <DropdownMenuRadioItem value="violet">Violet</DropdownMenuRadioItem>
                   <DropdownMenuRadioItem value="green">Green</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="orange">Orange</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="blue">Blue</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="purple">Purple</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="teal">Teal</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="crimson">Crimson</DropdownMenuRadioItem>
                 </DropdownMenuRadioGroup>
               </DropdownMenuContent>
             </DropdownMenu>
