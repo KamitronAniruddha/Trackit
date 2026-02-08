@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Toaster } from '@/components/ui/toaster';
@@ -7,6 +6,7 @@ import { UserProfileProvider, useUserProfile } from '@/contexts/user-profile-con
 import { useEffect } from 'react';
 import { AppGuard } from '@/components/app-guard';
 import { SpectateProvider } from '@/contexts/spectate-context';
+import { FirebaseErrorListener } from '@/components/firebase-error-listener';
 
 function ThemeApplicator({ children }: { children: React.ReactNode }) {
   const { profile } = useUserProfile();
@@ -51,6 +51,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             </AppGuard>
           </ThemeApplicator>
           <Toaster />
+          <FirebaseErrorListener />
         </UserProfileProvider>
       </SpectateProvider>
     </FirebaseClientProvider>

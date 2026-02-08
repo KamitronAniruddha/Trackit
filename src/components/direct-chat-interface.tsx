@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -15,6 +14,8 @@ import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { useSpectate } from '@/contexts/spectate-context';
 import type { Conversation } from '@/lib/types';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 interface PrivateMessage {
     id: string;
@@ -54,6 +55,12 @@ export function DirectChatInterface({ conversationId }: { conversationId: string
             } else {
                 setConversation(null);
             }
+        }, (error) => {
+            const permissionError = new FirestorePermissionError({
+                path: `conversations/${conversationId}`,
+                operation: 'get'
+            }, error);
+            errorEmitter.emit('permission-error', permissionError);
         });
 
         return () => unsubscribeConv();
@@ -73,7 +80,11 @@ export function DirectChatInterface({ conversationId }: { conversationId: string
             setMessages(msgs);
             setLoading(false);
         }, (error) => {
-            console.error("Error fetching messages:", error);
+            const permissionError = new FirestorePermissionError({
+                path: `conversations/${conversationId}/messages`,
+                operation: 'list'
+            }, error);
+            errorEmitter.emit('permission-error', permissionError);
             setLoading(false);
         });
 
@@ -84,7 +95,7 @@ export function DirectChatInterface({ conversationId }: { conversationId: string
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    const handleSendMessage = async (e: React.FormEvent) => {
+    const handleSendMessage = (e: React.FormEvent) => {
         e.preventDefault();
         if (!newMessage.trim() || !currentUserProfile || !conversation || isSpectating) return;
 
@@ -98,28 +109,40 @@ export function DirectChatInterface({ conversationId }: { conversationId: string
         const batch = writeBatch(firestore);
 
         const newMessageDoc = doc(messagesRef);
-        batch.set(newMessageDoc, {
+        const newMessageData = {
             text,
             senderId: currentUserProfile.uid,
             createdAt: serverTimestamp(),
-        });
+        };
+        batch.set(newMessageDoc, newMessageData);
         
-        batch.update(convDocRef, {
+        const convUpdateData = {
             lastMessage: text,
             lastMessageAt: serverTimestamp(),
             lastMessageSenderId: currentUserProfile.uid,
             lastMessageSenderName: currentUserProfile.displayName,
-        });
+        };
+        batch.update(convDocRef, convUpdateData);
 
-        try {
-            await batch.commit();
-        } catch (error) {
-            console.error("Error sending message:", error);
-            toast({ variant: 'destructive', title: 'Error sending message' });
-            setNewMessage(text);
-        } finally {
-            setIsSending(false);
-        }
+        batch.commit()
+            .catch((serverError) => {
+                 const permissionError = new FirestorePermissionError({
+                    path: convDocRef.path,
+                    operation: 'write', // 'write' covers create/update in a batch
+                    requestResourceData: {
+                        newMessage: newMessageData,
+                        conversationUpdate: convUpdateData
+                    }
+                 }, serverError);
+                errorEmitter.emit('permission-error', permissionError);
+                
+                // Revert UI changes
+                setNewMessage(text);
+                toast({ variant: 'destructive', title: 'Error sending message' });
+            })
+            .finally(() => {
+                setIsSending(false);
+            });
     };
     
     if (loading || profileLoading || !conversation || !otherUser) {
@@ -187,5 +210,3 @@ export function DirectChatInterface({ conversationId }: { conversationId: string
         </Card>
     );
 }
-
-    

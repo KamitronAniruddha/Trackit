@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -20,6 +19,8 @@ import { AddGroupMemberDialog } from './add-group-member-dialog';
 import { useRouter } from 'next/navigation';
 import { useSpectate } from '@/contexts/spectate-context';
 import type { Group } from '@/lib/types';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 interface GroupMessage {
     id: string;
@@ -86,6 +87,12 @@ export function GroupChatInterface({ groupId }: { groupId: string }) {
             } else {
                 setGroup(null);
             }
+        }, (error) => {
+            const permissionError = new FirestorePermissionError({
+                path: `groups/${groupId}`,
+                operation: 'get'
+            }, error);
+            errorEmitter.emit('permission-error', permissionError);
         });
 
         return () => unsubscribeGroup();
@@ -106,7 +113,11 @@ export function GroupChatInterface({ groupId }: { groupId: string }) {
             setMessages(msgs);
             setLoading(false);
         }, (error) => {
-            console.error("Error fetching messages:", error);
+            const permissionError = new FirestorePermissionError({
+                path: `groups/${groupId}/messages`,
+                operation: 'list'
+            }, error);
+            errorEmitter.emit('permission-error', permissionError);
             setLoading(false);
         });
 
@@ -117,7 +128,7 @@ export function GroupChatInterface({ groupId }: { groupId: string }) {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    const handleSendMessage = async (e: React.FormEvent) => {
+    const handleSendMessage = (e: React.FormEvent) => {
         e.preventDefault();
         if (!newMessage.trim() || !currentUserProfile || !group || isSpectating) return;
 
@@ -132,64 +143,91 @@ export function GroupChatInterface({ groupId }: { groupId: string }) {
 
         // 1. Add new message
         const newMessageDoc = doc(messagesRef);
-        batch.set(newMessageDoc, {
+        const newMessageData = {
             text,
             senderId: currentUserProfile.uid,
             senderName: currentUserProfile.displayName,
             senderPhotoURL: currentUserProfile.photoURL,
             createdAt: serverTimestamp(),
-        });
+        };
+        batch.set(newMessageDoc, newMessageData);
         
         // 2. Update group's last message
-        batch.update(groupDocRef, {
+        const groupUpdateData = {
             lastMessage: text,
             lastMessageAt: serverTimestamp(),
             lastMessageSenderId: currentUserProfile.uid,
             lastMessageSenderName: currentUserProfile.displayName,
-        });
+        };
+        batch.update(groupDocRef, groupUpdateData);
 
-        try {
-            await batch.commit();
-        } catch (error) {
-            console.error("Error sending message:", error);
-            toast({ variant: 'destructive', title: 'Error sending message' });
-            setNewMessage(text);
-        } finally {
-            setIsSending(false);
-        }
+        batch.commit()
+            .catch((serverError) => {
+                const permissionError = new FirestorePermissionError({
+                    path: groupDocRef.path,
+                    operation: 'write',
+                    requestResourceData: {
+                        newMessage: newMessageData,
+                        groupUpdate: groupUpdateData,
+                    }
+                }, serverError);
+                errorEmitter.emit('permission-error', permissionError);
+                setNewMessage(text);
+                toast({ variant: 'destructive', title: 'Error sending message' });
+            })
+            .finally(() => {
+                setIsSending(false);
+            });
     };
     
     const handleRemoveMember = async (memberId: string) => {
         if (!group || !currentUserProfile || currentUserProfile.uid !== group.adminId) return;
 
         const updatedMemberIds = group.memberIds.filter(id => id !== memberId);
+        const groupDocRef = doc(firestore, 'groups', groupId);
         
-        try {
-            await updateDoc(doc(firestore, 'groups', groupId), {
-                memberIds: updatedMemberIds
-            });
+        updateDoc(groupDocRef, {
+            memberIds: updatedMemberIds
+        }).then(() => {
             toast({title: 'Member removed'});
-        } catch (error) {
+        }).catch((serverError) => {
+             const permissionError = new FirestorePermissionError({
+                path: groupDocRef.path,
+                operation: 'update',
+                requestResourceData: { memberIds: updatedMemberIds },
+            }, serverError);
+            errorEmitter.emit('permission-error', permissionError);
             toast({variant: 'destructive', title: 'Error removing member'});
-        }
+        });
     }
 
     const handleDeleteGroup = async () => {
         const isAdmin = currentUserProfile?.uid === group?.adminId;
         if (!group || !isAdmin) return;
         setIsDeleting(true);
-        try {
-            await deleteDoc(doc(firestore, 'groups', groupId));
-            toast({ title: 'Group Deleted', description: `The group "${group.name}" has been permanently deleted.` });
-            router.push('/dashboard/messages');
-        } catch (error: any) {
-            toast({
-                variant: 'destructive',
-                title: 'Deletion Failed',
-                description: error.message || 'Could not delete the group.',
+        const groupDocRef = doc(firestore, 'groups', groupId);
+
+        deleteDoc(groupDocRef)
+            .then(() => {
+                toast({ title: 'Group Deleted', description: `The group "${group.name}" has been permanently deleted.` });
+                router.push('/dashboard/messages');
+            })
+            .catch((serverError) => {
+                const permissionError = new FirestorePermissionError({
+                    path: groupDocRef.path,
+                    operation: 'delete',
+                }, serverError);
+                errorEmitter.emit('permission-error', permissionError);
+
+                toast({
+                    variant: 'destructive',
+                    title: 'Deletion Failed',
+                    description: 'Could not delete the group.',
+                });
+            })
+            .finally(() => {
+                setIsDeleting(false);
             });
-            setIsDeleting(false);
-        }
     };
 
     if (loading || profileLoading || !group) {
