@@ -5,15 +5,46 @@ import { useUserProfile } from '@/contexts/user-profile-context';
 import { useFirestore } from '@/firebase/provider';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { collection, query, where, onSnapshot, getDoc, doc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, getDoc, doc, writeBatch, deleteDoc } from 'firebase/firestore';
 import { ToastAction } from '@/components/ui/toast';
+import { Button } from '@/components/ui/button';
 
 export function RealtimeToastNotifier() {
     const { profile: currentUser } = useUserProfile();
     const firestore = useFirestore();
-    const { toast } = useToast();
+    const { toast, dismiss } = useToast();
     const router = useRouter();
     const initialLoadDone = useRef(false);
+
+    const handleAccept = async (request: any) => {
+        if (!currentUser) return;
+        
+        const followDocRef = doc(collection(firestore, 'follows'));
+        const requestDocRef = doc(firestore, 'followRequests', request.id);
+
+        const batch = writeBatch(firestore);
+        batch.set(followDocRef, {
+            followerId: request.fromUserId,
+            followedId: currentUser.uid,
+        });
+        batch.delete(requestDocRef);
+
+        try {
+            await batch.commit();
+            toast({ title: "Request Accepted", description: `You are now followed by ${request.fromUserName}.`});
+        } catch (error) {
+            toast({ variant: 'destructive', title: "Error", description: 'Could not accept request.'});
+        }
+    };
+    
+    const handleDecline = async (requestId: string) => {
+        try {
+            await deleteDoc(doc(firestore, 'followRequests', requestId));
+            toast({ title: "Request Declined"});
+        } catch (error) {
+            toast({ variant: 'destructive', title: "Error", description: 'Could not decline request.'});
+        }
+    };
 
     useEffect(() => {
         if (!currentUser) {
@@ -34,10 +65,19 @@ export function RealtimeToastNotifier() {
             if (!initialLoadDone.current) return;
             snapshot.docChanges().forEach((change) => {
                 if (change.type === 'added') {
-                    const newRequest = change.doc.data();
-                    toast({
+                    const newRequest = {id: change.doc.id, ...change.doc.data()};
+                    const { id: toastId } = toast({
                         title: "New Follow Request",
-                        description: `${newRequest.fromUserName} wants to follow you.`,
+                        duration: Infinity,
+                        description: (
+                            <div>
+                                <p className="mb-2">{newRequest.fromUserName} wants to follow you.</p>
+                                <div className="flex gap-2">
+                                    <Button size="sm" onClick={() => { handleAccept(newRequest); dismiss(toastId); }}>Accept</Button>
+                                    <Button size="sm" variant="secondary" onClick={() => { handleDecline(newRequest.id); dismiss(toastId); }}>Decline</Button>
+                                </div>
+                            </div>
+                        ),
                     });
                 }
             });
@@ -107,7 +147,7 @@ export function RealtimeToastNotifier() {
             unsubGroups();
         };
 
-    }, [currentUser, firestore, router, toast]);
+    }, [currentUser, firestore, router, toast, dismiss]);
 
     return null; // This component doesn't render anything
 }
