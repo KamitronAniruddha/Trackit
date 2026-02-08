@@ -1,23 +1,39 @@
 
 'use client';
-
-import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Construction } from "lucide-react";
+import { PostFeed } from "@/components/agram/post-feed";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import { useState } from "react";
+import { CreatePostDialog } from "@/components/agram/create-post-dialog";
+import { useUserProfile } from "@/contexts/user-profile-context";
+import { PremiumFeatureLock } from "@/components/premium-lock";
 
 export default function AgramPage() {
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const { profile } = useUserProfile();
+
+    if (!profile?.isPremium) {
+        return <PremiumFeatureLock featureName="A-gram" description="Share your study journey, find motivation, and connect with fellow aspirants in our exclusive community feed." />;
+    }
+
     return (
-        <div className="flex items-center justify-center h-full">
-            <Card className="w-full max-w-md text-center">
-                 <CardHeader>
-                    <div className="mx-auto p-4 bg-primary/10 rounded-full mb-4 w-fit">
-                        <Construction className="h-10 w-10 text-primary" />
+        <>
+            <div className="flex flex-col gap-6">
+                <div className="flex justify-between items-center">
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight">A-gram</h1>
+                        <p className="text-muted-foreground">
+                            Share your moments and connect with the community.
+                        </p>
                     </div>
-                    <CardTitle className="text-3xl">Coming Soon!</CardTitle>
-                    <CardDescription>
-                        A-gram is under construction. This dedicated social space for aspirants will be launching in a future update.
-                    </CardDescription>
-                </CardHeader>
-            </Card>
-        </div>
+                    <Button onClick={() => setIsCreateOpen(true)}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        New Post
+                    </Button>
+                </div>
+                <PostFeed />
+            </div>
+            <CreatePostDialog isOpen={isCreateOpen} onOpenChange={setIsCreateOpen} />
+        </>
     );
 }

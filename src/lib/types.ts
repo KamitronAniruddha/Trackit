@@ -28,16 +28,3 @@ export interface Comment {
     text: string;
     createdAt: Timestamp;
 }
-
-export interface Mistake {
-    id: string;
-    userId: string;
-    subject: string;
-    chapter: string;
-    question: string;
-    myMistake: string;
-    correctConcept: string;
-    tags: string[];
-    status: 'active' | 'reviewed';
-    createdAt: Timestamp;
-}
