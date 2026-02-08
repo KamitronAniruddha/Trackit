@@ -4,7 +4,7 @@ export function NeetProgressLogo(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 256 256"
+      viewBox="0 0 200 200"
       width="1em"
       height="1em"
       {...props}
@@ -15,10 +15,18 @@ export function NeetProgressLogo(props: SVGProps<SVGSVGElement>) {
           <stop offset="100%" stopColor="hsl(var(--accent))" />
         </linearGradient>
       </defs>
-      <path
+      <text
+        x="50%"
+        y="50%"
+        dy=".3em"
+        textAnchor="middle"
+        fontFamily="cursive"
+        fontSize="100"
+        fontWeight="bold"
         fill="url(#logo-gradient)"
-        d="M208,32H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32Zm-48,80H112v48a8,8,0,0,1-16,0V80a8,8,0,0,1,8-8h56a8,8,0,0,1,0,16H112v24h48a8,8,0,0,1,0,16Z"
-      ></path>
+      >
+        Ani
+      </text>
     </svg>
   );
 }
