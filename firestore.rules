@@ -238,8 +238,15 @@ service cloud.firestore {
     }
     
     match /follows/{followId} {
-        // CREATE: A user can create a follow document if they are the follower.
-        allow create: if isSignedIn() && request.resource.data.followerId == request.auth.uid;
+        // CREATE: A user can create a follow document if they are the follower,
+        // OR if they are the one being followed, but ONLY if a corresponding follow request exists.
+        allow create: if isSignedIn() && (
+            (request.resource.data.followerId == request.auth.uid) ||
+            (
+                request.resource.data.followedId == request.auth.uid &&
+                exists(/databases/$(database)/documents/followRequests/$(request.resource.data.followerId + '_' + request.resource.data.followedId))
+            )
+        );
 
         // READ: Any signed-in user can read follow relationships.
         allow read: if isSignedIn();

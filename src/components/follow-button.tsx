@@ -1,10 +1,9 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useFirestore } from '@/firebase/provider';
 import { useUserProfile } from '@/contexts/user-profile-context';
-import { collection, query, where, addDoc, deleteDoc, doc, onSnapshot, getDocs } from 'firebase/firestore';
+import { collection, query, where, addDoc, deleteDoc, doc, onSnapshot, getDocs, setDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Loader2, UserPlus, UserCheck, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -89,7 +88,9 @@ export function FollowButton({ targetUserId }: FollowButtonProps) {
         if (!currentUser || operationPending) return;
         setOperationPending(true);
         try {
-            await addDoc(collection(firestore, 'followRequests'), {
+            const requestId = `${currentUser.uid}_${targetUserId}`;
+            const requestDocRef = doc(firestore, 'followRequests', requestId);
+            await setDoc(requestDocRef, {
                 fromUserId: currentUser.uid,
                 fromUserName: currentUser.displayName,
                 fromUserPhotoURL: currentUser.photoURL,
