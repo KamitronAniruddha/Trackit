@@ -63,6 +63,7 @@ import { DeveloperCredit } from './developer-credit';
 import { cn } from '@/lib/utils';
 import { useSpectate } from '@/contexts/spectate-context';
 import { useToast } from '@/hooks/use-toast';
+import { RealtimeToastNotifier } from './RealtimeToastNotifier';
 
 const SpectatingAdminBanner = () => {
   const { isSpectating, spectatingUser, stopSpectating } = useSpectate();
@@ -285,6 +286,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
+        <RealtimeToastNotifier />
         <SpectatingAdminBanner />
         <BeingSpectatedUserBanner />
         <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">

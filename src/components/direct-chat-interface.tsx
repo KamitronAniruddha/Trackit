@@ -14,23 +14,13 @@ import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { useSpectate } from '@/contexts/spectate-context';
+import type { Conversation } from '@/lib/types';
 
 interface PrivateMessage {
     id: string;
     senderId: string;
     text: string;
     createdAt: { toDate: () => Date };
-}
-
-interface Conversation {
-    id: string;
-    memberIds: string[];
-    membersInfo: {
-        [uid: string]: {
-            displayName: string;
-            photoURL?: string;
-        }
-    };
 }
 
 export function DirectChatInterface({ conversationId }: { conversationId: string }) {
@@ -117,6 +107,7 @@ export function DirectChatInterface({ conversationId }: { conversationId: string
         batch.update(convDocRef, {
             lastMessage: text,
             lastMessageAt: serverTimestamp(),
+            lastMessageSenderId: currentUserProfile.uid,
             [`membersInfo.${currentUserProfile.uid}`]: {
                 displayName: currentUserProfile.displayName,
                 photoURL: currentUserProfile.photoURL,

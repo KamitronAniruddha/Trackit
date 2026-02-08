@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -18,6 +19,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { AddGroupMemberDialog } from './add-group-member-dialog';
 import { useRouter } from 'next/navigation';
 import { useSpectate } from '@/contexts/spectate-context';
+import type { Group } from '@/lib/types';
 
 interface GroupMessage {
     id: string;
@@ -26,15 +28,6 @@ interface GroupMessage {
     senderPhotoURL?: string | null;
     text: string;
     createdAt: { toDate: () => Date };
-}
-
-interface Group {
-    id: string;
-    name: string;
-    description: string;
-    photoURL?: string;
-    adminId: string;
-    memberIds: string[];
 }
 
 export function GroupChatInterface({ groupId }: { groupId: string }) {
@@ -151,6 +144,8 @@ export function GroupChatInterface({ groupId }: { groupId: string }) {
         batch.update(groupDocRef, {
             lastMessage: text,
             lastMessageAt: serverTimestamp(),
+            lastMessageSenderId: currentUserProfile.uid,
+            lastMessageSenderName: currentUserProfile.displayName,
         });
 
         try {

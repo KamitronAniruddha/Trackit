@@ -29,3 +29,30 @@ export interface Comment {
     text: string;
     createdAt: Timestamp;
 }
+
+export interface Conversation {
+    id: string;
+    memberIds: string[];
+    membersInfo: {
+        [uid: string]: {
+            displayName: string;
+            photoURL?: string;
+        }
+    }
+    lastMessage?: string;
+    lastMessageAt?: Timestamp;
+    lastMessageSenderId?: string;
+}
+
+export interface Group {
+    id: string;
+    name: string;
+    description?: string;
+    photoURL?: string;
+    adminId: string;
+    memberIds: string[];
+    lastMessage?: string;
+    lastMessageAt?: Timestamp;
+    lastMessageSenderId?: string;
+    lastMessageSenderName?: string;
+}
