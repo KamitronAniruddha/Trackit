@@ -6,7 +6,7 @@ export default function ProfilePage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">My Profile</h1>
         <p className="text-muted-foreground">
-          Manage your account settings and preferences.
+          Manage your account settings, appearance, security, and more.
         </p>
       </div>
       <ProfileClient />

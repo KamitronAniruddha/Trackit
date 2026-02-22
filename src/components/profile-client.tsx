@@ -1,6 +1,6 @@
 'use client';
 
-import { KeySquare, Edit, Loader2, ShieldCheck, Camera, BookCopy, Palette, AlertTriangle, Gem, Eye, Users } from 'lucide-react';
+import { KeySquare, Edit, Loader2, ShieldCheck, Camera, BookCopy, Palette, AlertTriangle, Gem, Eye, Users, Link2, Upload } from 'lucide-react';
 import { Button } from './ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from './ui/skeleton';
@@ -58,6 +58,7 @@ import { PremiumCodeActivator } from './premium-code-activator';
 import { PatternLock } from './ui/pattern-lock';
 import { SpectatePermissionManager } from './profile/spectate-permission-manager';
 import { FollowListDialog } from './profile/follow-list-dialog';
+import { UpdateAvatarDialog } from './profile/update-avatar-dialog';
 
 
 const profileFormSchema = z.object({
@@ -120,6 +121,7 @@ export function ProfileClient() {
     const [followListInitialTab, setFollowListInitialTab] = useState<'followers' | 'following'>('followers');
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
     const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
     const [isChangingPassword, setIsChangingPassword] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
@@ -131,11 +133,6 @@ export function ProfileClient() {
     const [isSettingPin, setIsSettingPin] = useState(false);
     const [oldPatternError, setOldPatternError] = useState(false);
 
-
-    const fileInputRef = useRef<HTMLInputElement>(null);
-
-    const currentYear = new Date().getFullYear();
-    const years = Array.from({ length: 10 }, (_, i) => currentYear + i);
 
     const form = useForm<z.infer<typeof profileFormSchema>>({
         resolver: zodResolver(profileFormSchema),
@@ -230,14 +227,12 @@ export function ProfileClient() {
         const currentUser = auth.currentUser;
         setIsUpdating(true);
         try {
-            // Update auth profile (for display name)
             if (currentUser.displayName !== values.displayName) {
                 await updateAuthProfile(currentUser, {
                     displayName: values.displayName,
                 });
             }
             
-            // Update firestore document
             const userDocRef = doc(firestore, 'users', currentUser.uid);
             await setDoc(userDocRef, { 
                 displayName: values.displayName,
@@ -285,15 +280,13 @@ export function ProfileClient() {
             const photoURL = await getDownloadURL(uploadResult.ref);
     
             await updateAuthProfile(currentUser, { photoURL });
-    
-            const userDocRef = doc(firestore, 'users', currentUser.uid);
-            await setDoc(userDocRef, { photoURL }, { merge: true });
+            await updateProfileSetting('photoURL', photoURL);
     
             await currentUser.reload();
-            
             router.refresh();
     
             toast({ title: 'Profile picture updated!' });
+            setIsAvatarDialogOpen(false);
         } catch (error: any) {
             toast({
                 variant: 'destructive',
@@ -302,9 +295,35 @@ export function ProfileClient() {
             });
         } finally {
             setIsUploading(false);
-            if (fileInputRef.current) {
-                fileInputRef.current.value = "";
-            }
+        }
+    };
+    
+    const handlePhotoURLUpdate = async (photoURL: string) => {
+        if (!auth.currentUser) {
+            toast({
+                variant: "destructive",
+                title: "Not Authenticated",
+                description: "You must be logged in to update your profile.",
+            });
+            return;
+        }
+
+        setIsUploading(true);
+        try {
+            new URL(photoURL);
+            await updateAuthProfile(auth.currentUser, { photoURL });
+            await updateProfileSetting('photoURL', photoURL);
+            await auth.currentUser.reload();
+            router.refresh();
+            toast({ title: 'Profile picture updated!' });
+        } catch (error: any) {
+             toast({
+                variant: 'destructive',
+                title: 'Update Failed',
+                description: (error as TypeError).name === 'TypeError' ? 'Please enter a valid URL.' : (error.message || 'An unexpected error occurred.'),
+            });
+        } finally {
+            setIsUploading(false);
         }
     };
 
@@ -474,13 +493,11 @@ export function ProfileClient() {
     
             const batch = writeBatch(firestore);
     
-            // Reset progress data
             batch.set(progressDocRef, { 
                 progress: newProgress,
                 revisions: {}
             });
             
-            // Reset streak data on user profile
             batch.update(userDocRef, {
                 currentStreak: 0,
                 lastGoalCompletedDate: null
@@ -527,69 +544,49 @@ export function ProfileClient() {
                     </CardContent>
                 </Card>
             )}
-            <div className="grid gap-8 lg:grid-cols-2">
-                <Card className="bg-card/50 backdrop-blur-sm flex flex-col">
-                    <CardHeader>
-                        <CardTitle>User Details</CardTitle>
-                        <CardDescription>Your personal information and stats.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4 flex-grow">
-                    {isLoading ? (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                <div className="lg:col-span-1 space-y-8">
+                    <Card className="bg-card/50 backdrop-blur-sm">
+                        <CardContent className="pt-6">
+                        {isLoading ? (
                             <div className="space-y-6 pt-2">
                                 <div className="flex justify-center py-4">
-                                    <Skeleton className="h-24 w-24 rounded-full" />
+                                    <Skeleton className="h-32 w-32 rounded-full" />
                                 </div>
-                                <div className="space-y-2">
-                                    <Skeleton className="h-4 w-1/4" />
-                                    <Skeleton className="h-6 w-3/4" />
+                                <div className="space-y-2 text-center">
+                                    <Skeleton className="h-6 w-3/4 mx-auto" />
+                                    <Skeleton className="h-4 w-full mx-auto" />
                                 </div>
-                                <div className="space-y-2">
-                                    <Skeleton className="h-4 w-1/4" />
-                                    <Skeleton className="h-6 w-full" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Skeleton className="h-4 w-1/4" />
-                                    <Skeleton className="h-6 w-1/2" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Skeleton className="h-4 w-1/4" />
-                                    <Skeleton className="h-6 w-1/3" />
+                                <div className="flex justify-around">
+                                    <Skeleton className="h-10 w-20" />
+                                    <Skeleton className="h-10 w-20" />
                                 </div>
                             </div>
                         ) : profile ? (
                             <>
                                 <div className="flex flex-col items-center justify-center py-4 gap-4">
                                     <div className="relative">
-                                        <Avatar className="h-24 w-24 border-4 border-primary/20">
+                                        <Avatar className="h-32 w-32 border-4 border-primary/20">
                                             <AvatarImage src={profile.photoURL ?? undefined} alt={profile.displayName} />
-                                            <AvatarFallback className="text-3xl">
+                                            <AvatarFallback className="text-5xl">
                                                 {profile.displayName?.charAt(0).toUpperCase() ?? 'U'}
                                             </AvatarFallback>
                                         </Avatar>
-                                        <input
-                                            type="file"
-                                            ref={fileInputRef}
-                                            onChange={handlePhotoUpload}
-                                            className="hidden"
-                                            accept="image/png, image/jpeg"
-                                            disabled={isUploading}
-                                        />
                                         <Button
                                             size="icon"
                                             variant="outline"
-                                            className="absolute bottom-0 right-0 rounded-full bg-background"
-                                            onClick={() => fileInputRef.current?.click()}
-                                            disabled={isUploading}
-                                            aria-label="Upload profile picture"
+                                            className="absolute bottom-1 right-1 rounded-full bg-background h-9 w-9"
+                                            onClick={() => setIsAvatarDialogOpen(true)}
+                                            aria-label="Update profile picture"
                                         >
-                                            {isUploading ? <Loader2 className="animate-spin" /> : <Camera className="h-4 w-4" />}
+                                            <Camera className="h-5 w-5" />
                                         </Button>
                                     </div>
                                     <div className="text-center">
                                         <h3 className="text-2xl font-bold">{profile.displayName}</h3>
                                         <p className="text-muted-foreground">{profile.email}</p>
                                     </div>
-                                    <div className="flex items-center gap-6 text-center">
+                                    <div className="flex items-center gap-6 text-center pt-2">
                                         <button onClick={() => { setFollowListInitialTab('followers'); setIsFollowListOpen(true);}} className="hover:bg-muted p-2 rounded-md transition-colors">
                                             <p className="text-2xl font-bold">{followerCount}</p>
                                             <p className="text-sm text-muted-foreground">Followers</p>
@@ -601,36 +598,32 @@ export function ProfileClient() {
                                     </div>
                                 </div>
                                 <div className="space-y-4 pt-4 border-t">
-                                    <div>
+                                    <div className="flex justify-between items-center">
                                         <p className="text-sm font-medium text-muted-foreground">Exam</p>
-                                        <p className="text-lg font-semibold">{profile.exam}</p>
+                                        <p className="font-semibold">{profile.exam}</p>
                                     </div>
-                                    <div>
+                                    <div className="flex justify-between items-center">
                                         <p className="text-sm font-medium text-muted-foreground">Class Level</p>
-                                        <p className="text-lg font-semibold">{profile.classLevel}</p>
+                                        <p className="font-semibold">{profile.classLevel}</p>
                                     </div>
-                                    <div>
+                                    <div className="flex justify-between items-center">
                                         <p className="text-sm font-medium text-muted-foreground">Target Year</p>
-                                        <p className="text-lg font-semibold">{profile.targetYear}</p>
+                                        <p className="font-semibold">{profile.targetYear}</p>
                                     </div>
                                 </div>
                             </>
-                        ) : (
-                            <div className="text-center text-muted-foreground py-10">
-                                Could not load user profile. Please try logging in again.
-                            </div>
-                        )
+                        ) : null
                     }
                     </CardContent>
-                    <CardFooter className="flex justify-end">
+                     <CardFooter>
                         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                             <DialogTrigger asChild>
-                                <Button type="button" variant="outline" disabled={!profile}>
+                                <Button type="button" variant="outline" disabled={!profile} className="w-full">
                                     <Edit className="mr-2 h-4 w-4" />
                                     Edit Profile
                                 </Button>
                             </DialogTrigger>
-                            <DialogContent className="sm:max-w-[425px]">
+                            <DialogContent>
                                 <DialogHeader>
                                     <DialogTitle>Edit profile</DialogTitle>
                                     <DialogDescription>
@@ -652,52 +645,54 @@ export function ProfileClient() {
                                                 </FormItem>
                                             )}
                                         />
-                                        <FormField
-                                            control={form.control}
-                                            name="classLevel"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Class Level</FormLabel>
-                                                    <Select onValueChange={field.onChange} value={field.value} disabled={isUpdating}>
-                                                        <FormControl>
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Select a class" />
-                                                        </SelectTrigger>
-                                                        </FormControl>
-                                                        <SelectContent>
-                                                            <SelectItem value="11">11th Grade</SelectItem>
-                                                            <SelectItem value="12">12th Grade</SelectItem>
-                                                            <SelectItem value="Dropper">Dropper</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="targetYear"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Target Year</FormLabel>
-                                                    <Select onValueChange={(value) => field.onChange(Number(value))} value={String(field.value)} disabled={isUpdating}>
-                                                        <FormControl>
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Select a year" />
-                                                        </SelectTrigger>
-                                                        </FormControl>
-                                                        <SelectContent>
-                                                        {years.map((year) => (
-                                                            <SelectItem key={year} value={String(year)}>
-                                                            {year}
-                                                            </SelectItem>
-                                                        ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <FormField
+                                                control={form.control}
+                                                name="classLevel"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Class Level</FormLabel>
+                                                        <Select onValueChange={field.onChange} value={field.value} disabled={isUpdating}>
+                                                            <FormControl>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Select a class" />
+                                                            </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                                <SelectItem value="11">11th Grade</SelectItem>
+                                                                <SelectItem value="12">12th Grade</SelectItem>
+                                                                <SelectItem value="Dropper">Dropper</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={form.control}
+                                                name="targetYear"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Target Year</FormLabel>
+                                                        <Select onValueChange={(value) => field.onChange(Number(value))} value={String(field.value)} disabled={isUpdating}>
+                                                            <FormControl>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Select a year" />
+                                                            </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                            {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + i).map((year) => (
+                                                                <SelectItem key={year} value={String(year)}>
+                                                                {year}
+                                                                </SelectItem>
+                                                            ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
                                         <DialogFooter>
                                             <Button type="submit" disabled={isUpdating}>
                                                 {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -709,8 +704,9 @@ export function ProfileClient() {
                             </DialogContent>
                         </Dialog>
                     </CardFooter>
-                </Card>
-                <div className="space-y-8">
+                    </Card>
+                </div>
+                <div className="lg:col-span-2 space-y-8">
                      <Card className="bg-card/50 backdrop-blur-sm">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
@@ -725,9 +721,6 @@ export function ProfileClient() {
                             <div className="flex items-center justify-between rounded-lg border p-4">
                                 <div className="space-y-0.5">
                                     <Label className="text-base">Dark Mode</Label>
-                                    <p className="text-sm text-muted-foreground">
-                                        Enable or disable dark mode.
-                                    </p>
                                 </div>
                                 <Switch
                                     checked={profile?.darkMode ?? true}
@@ -759,7 +752,6 @@ export function ProfileClient() {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            {isUpdatingAppearance && <div className="flex items-center text-sm text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Applying changes...</div>}
                         </CardContent>
                     </Card>
                     <Card className="bg-card/50 backdrop-blur-sm">
@@ -940,17 +932,14 @@ export function ProfileClient() {
                             <SpectatePermissionManager />
                         </CardContent>
                     </Card>
-                    <Card className="bg-card/50 backdrop-blur-sm">
+                    <Card className="bg-destructive/10 border-destructive/20">
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <BookCopy />
-                                Change Exam
+                            <CardTitle className="flex items-center gap-2 text-destructive">
+                                <AlertTriangle />
+                                Danger Zone
                             </CardTitle>
-                            <CardDescription>
-                                Switching exams will reset your progress. This action is permanent.
-                            </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4 text-center">
+                        <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <Button className="w-full" variant="outline" disabled={!profile || isSwitchingExam}>
@@ -970,24 +959,11 @@ export function ProfileClient() {
                                         <AlertDialogCancel disabled={isSwitchingExam}>Cancel</AlertDialogCancel>
                                         <AlertDialogAction onClick={handleSwitchExam} disabled={isSwitchingExam} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                                             {isSwitchingExam && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                            Yes, reset my progress and switch
+                                            Yes, reset and switch
                                         </AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
-                        </CardContent>
-                    </Card>
-                    <Card className="bg-destructive/10 border-destructive/20">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-destructive">
-                                <AlertTriangle />
-                                Danger Zone
-                            </CardTitle>
-                            <CardDescription className="text-destructive/80">
-                            These actions are permanent and cannot be undone.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <Button variant="destructive" className="w-full" disabled={isResetting}>
@@ -1016,6 +992,13 @@ export function ProfileClient() {
             </div>
         </div>
         {profile && <FollowListDialog isOpen={isFollowListOpen} onOpenChange={setIsFollowListOpen} user={profile} initialTab={followListInitialTab} />}
+        <UpdateAvatarDialog
+            isOpen={isAvatarDialogOpen}
+            onOpenChange={setIsAvatarDialogOpen}
+            onFileUpload={handlePhotoUpload}
+            onUrlSubmit={handlePhotoURLUpdate}
+            isUploading={isUploading}
+        />
         </>
     );
 }
