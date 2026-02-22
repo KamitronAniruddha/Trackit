@@ -59,6 +59,7 @@ import { PatternLock } from './ui/pattern-lock';
 import { SpectatePermissionManager } from './profile/spectate-permission-manager';
 import { FollowListDialog } from './profile/follow-list-dialog';
 import { UpdateAvatarDialog } from './profile/update-avatar-dialog';
+import Image from 'next/image';
 
 
 const profileFormSchema = z.object({
@@ -566,16 +567,38 @@ export function ProfileClient() {
                             <>
                                 <div className="flex flex-col items-center justify-center py-4 gap-4">
                                     <div className="relative">
-                                        <Avatar className="h-32 w-32 border-4 border-primary/20">
-                                            <AvatarImage src={profile.photoURL ?? undefined} alt={profile.displayName} />
-                                            <AvatarFallback className="text-5xl">
-                                                {profile.displayName?.charAt(0).toUpperCase() ?? 'U'}
-                                            </AvatarFallback>
-                                        </Avatar>
+                                        <Dialog>
+                                            <DialogTrigger asChild disabled={!profile.photoURL}>
+                                                <button className="relative group rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background">
+                                                    <Avatar className="h-32 w-32 border-4 border-primary/20">
+                                                        <AvatarImage src={profile.photoURL ?? undefined} alt={profile.displayName} />
+                                                        <AvatarFallback className="text-5xl">
+                                                            {profile.displayName?.charAt(0).toUpperCase() ?? 'U'}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    {profile.photoURL && (
+                                                        <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity duration-300">
+                                                            <Eye className="h-10 w-10 text-white" />
+                                                        </div>
+                                                    )}
+                                                </button>
+                                            </DialogTrigger>
+                                            <DialogContent className="p-0 max-w-2xl w-auto bg-transparent border-0 shadow-none">
+                                                {profile.photoURL && (
+                                                    <Image
+                                                        src={profile.photoURL}
+                                                        alt={profile.displayName}
+                                                        width={1000}
+                                                        height={1000}
+                                                        className="object-contain rounded-lg max-h-[80vh] w-auto h-auto"
+                                                    />
+                                                )}
+                                            </DialogContent>
+                                        </Dialog>
                                         <Button
                                             size="icon"
                                             variant="outline"
-                                            className="absolute bottom-1 right-1 rounded-full bg-background h-9 w-9"
+                                            className="absolute bottom-1 right-1 rounded-full bg-background h-9 w-9 z-10"
                                             onClick={() => setIsAvatarDialogOpen(true)}
                                             aria-label="Update profile picture"
                                         >
