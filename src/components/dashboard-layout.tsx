@@ -210,7 +210,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 animate-glow">
             <NeetProgressLogo className="h-8 w-8 text-primary" />
             <span className="text-xl font-semibold">{exam} Tracker</span>
           </div>
@@ -250,14 +250,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         <SidebarFooter>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex w-full items-center gap-3 rounded-md p-2 text-left text-sm transition-colors hover:bg-sidebar-accent">
-                <Avatar className="h-9 w-9">
+              <button className="flex w-full items-center gap-4 rounded-lg border border-sidebar-border p-3 text-left text-sm transition-colors hover:bg-sidebar-accent">
+                <Avatar className="h-10 w-10">
                   {user?.photoURL && <AvatarImage src={user.photoURL} alt="User Avatar" />}
                   <AvatarFallback>{user?.displayName?.charAt(0).toUpperCase() ?? 'U'}</AvatarFallback>
                 </Avatar>
-                <div className="flex flex-col truncate">
+                <div className="flex-1 truncate">
                   <span className="font-semibold">{user?.displayName ?? 'Student'}</span>
-                  <span className={cn("text-xs", isPremium ? "text-primary font-semibold" : "text-muted-foreground")}>{isPremium ? "Premium" : "Demo"}</span>
+                  <span className={cn("block text-xs", isPremium ? "text-primary font-semibold" : "text-muted-foreground")}>{isPremium ? "Premium Member" : "Demo User"}</span>
                 </div>
               </button>
             </DropdownMenuTrigger>
@@ -329,7 +329,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             </DropdownMenu>
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 animate-[fade-in-up_0.5s_ease-out]">{children}</main>
         <DeveloperCredit />
       </SidebarInset>
     </SidebarProvider>
