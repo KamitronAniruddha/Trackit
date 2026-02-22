@@ -15,6 +15,7 @@ import {
   FormControl,
   FormField,
   FormItem,
+  FormLabel,
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -26,7 +27,6 @@ import { useFirebaseApp, useFirestore } from '@/firebase/provider';
 import { DeveloperCredit } from './developer-credit';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { PatternLock } from './ui/pattern-lock';
-import { Label } from './ui/label';
 
 
 const formSchema = z.object({
@@ -146,12 +146,10 @@ export default function SignupForm() {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <div className="relative">
+                        <FormLabel>Full Name</FormLabel>
                         <FormControl>
-                            <Input placeholder=" " {...field} disabled={isLoading} className="peer block w-full appearance-none border-0 border-b-2 bg-transparent px-0 py-2.5 focus:border-primary focus:outline-none focus:ring-0" />
+                            <Input placeholder="e.g. Jane Doe" {...field} disabled={isLoading} />
                         </FormControl>
-                        <Label className="absolute top-3 -z-10 origin-[0] -translate-y-6 scale-75 transform text-muted-foreground duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:left-0 peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:text-primary">Full Name</Label>
-                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -161,12 +159,10 @@ export default function SignupForm() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <div className="relative">
+                        <FormLabel>Email Address</FormLabel>
                         <FormControl>
-                            <Input placeholder=" " {...field} disabled={isLoading} className="peer block w-full appearance-none border-0 border-b-2 bg-transparent px-0 py-2.5 focus:border-primary focus:outline-none focus:ring-0" />
+                            <Input placeholder="jane.doe@example.com" {...field} disabled={isLoading} />
                         </FormControl>
-                        <Label className="absolute top-3 -z-10 origin-[0] -translate-y-6 scale-75 transform text-muted-foreground duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:left-0 peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:text-primary">Email Address</Label>
-                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -177,7 +173,7 @@ export default function SignupForm() {
                     name="authMethod"
                     render={({ field }) => (
                         <FormItem>
-                            <Label>Authentication Method</Label>
+                            <FormLabel>Authentication Method</FormLabel>
                              <FormControl>
                                 <RadioGroup
                                 onValueChange={(value) => {
@@ -193,13 +189,13 @@ export default function SignupForm() {
                                     <FormControl>
                                     <RadioGroupItem value="password" />
                                     </FormControl>
-                                    <Label className="font-normal">Password</Label>
+                                    <FormLabel className="font-normal">Password</FormLabel>
                                 </FormItem>
                                 <FormItem className="flex items-center space-x-2 space-y-0">
                                     <FormControl>
                                     <RadioGroupItem value="pattern" />
                                     </FormControl>
-                                    <Label className="font-normal">Pattern</Label>
+                                    <FormLabel className="font-normal">Pattern</FormLabel>
                                 </FormItem>
                                 </RadioGroup>
                             </FormControl>
@@ -212,16 +208,15 @@ export default function SignupForm() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <Label className="text-muted-foreground">{authMethod === 'password' ? 'Password' : 'Draw Your Pattern'}</Label>
+                      <FormLabel>{authMethod === 'password' ? 'Password' : 'Draw Your Pattern'}</FormLabel>
                       <FormControl>
                         {authMethod === 'password' ? (
                             <div className="relative">
                                 <Input
                                     type={showPassword ? 'text' : 'password'}
-                                    placeholder=" "
+                                    placeholder="Must be at least 8 characters"
                                     {...field}
                                     disabled={isLoading}
-                                    className="peer block w-full appearance-none border-0 border-b-2 bg-transparent px-0 py-2.5 pr-10 focus:border-primary focus:outline-none focus:ring-0"
                                 />
                                 <Button
                                     type="button"

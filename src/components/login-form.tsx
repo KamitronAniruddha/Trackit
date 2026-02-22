@@ -14,6 +14,7 @@ import {
   FormControl,
   FormField,
   FormItem,
+  FormLabel,
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -25,7 +26,6 @@ import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { useFirebaseApp } from '@/firebase/provider';
 import { DeveloperCredit } from '@/components/developer-credit';
 import { PatternLock } from './ui/pattern-lock';
-import { Label } from './ui/label';
 
 
 const passwordFormSchema = z.object({
@@ -136,13 +136,11 @@ export default function LoginForm() {
                             name="email"
                             render={({ field }) => (
                                 <FormItem>
-                                <div className="relative">
+                                    <FormLabel>Email Address</FormLabel>
                                     <FormControl>
-                                        <Input placeholder=" " {...field} disabled={isLoading} className="peer block w-full appearance-none border-0 border-b-2 bg-transparent px-0 py-2.5 focus:border-primary focus:outline-none focus:ring-0" />
+                                        <Input placeholder="e.g. jane.doe@example.com" {...field} disabled={isLoading} />
                                     </FormControl>
-                                    <Label className="absolute top-3 -z-10 origin-[0] -translate-y-6 scale-75 transform text-muted-foreground duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:left-0 peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:text-primary">Email Address</Label>
-                                </div>
-                                <FormMessage />
+                                    <FormMessage />
                                 </FormItem>
                             )}
                             />
@@ -151,30 +149,29 @@ export default function LoginForm() {
                             name="password"
                             render={({ field }) => (
                                 <FormItem>
-                                <div className="relative">
-                                    <FormControl>
-                                        <Input 
-                                            type={showPassword ? 'text' : 'password'}
-                                            placeholder=" "
-                                            {...field} 
+                                    <FormLabel>Password</FormLabel>
+                                    <div className="relative">
+                                        <FormControl>
+                                            <Input 
+                                                type={showPassword ? 'text' : 'password'}
+                                                placeholder="Your password"
+                                                {...field} 
+                                                disabled={isLoading}
+                                            />
+                                        </FormControl>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="absolute top-1/2 right-1 h-8 w-8 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                            onClick={() => setShowPassword(prev => !prev)}
                                             disabled={isLoading}
-                                            className="peer block w-full appearance-none border-0 border-b-2 bg-transparent px-0 py-2.5 pr-10 focus:border-primary focus:outline-none focus:ring-0"
-                                        />
-                                    </FormControl>
-                                    <Label className="absolute top-3 -z-10 origin-[0] -translate-y-6 scale-75 transform text-muted-foreground duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:left-0 peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:text-primary">Password</Label>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        className="absolute top-1/2 right-1 h-8 w-8 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                                        onClick={() => setShowPassword(prev => !prev)}
-                                        disabled={isLoading}
-                                        aria-label={showPassword ? 'Hide password' : 'Show password'}
-                                    >
-                                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                                    </Button>
-                                </div>
-                                <FormMessage />
+                                            aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                        >
+                                            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                                        </Button>
+                                    </div>
+                                    <FormMessage />
                                 </FormItem>
                             )}
                             />
@@ -193,13 +190,11 @@ export default function LoginForm() {
                                     name="email"
                                     render={({ field }) => (
                                         <FormItem>
-                                        <div className="relative">
+                                            <FormLabel>Email Address</FormLabel>
                                             <FormControl>
-                                                <Input placeholder=" " {...field} disabled={isLoading} className="peer block w-full appearance-none border-0 border-b-2 bg-transparent px-0 py-2.5 focus:border-primary focus:outline-none focus:ring-0" />
+                                                <Input placeholder="e.g. jane.doe@example.com" {...field} disabled={isLoading} />
                                             </FormControl>
-                                            <Label className="absolute top-3 -z-10 origin-[0] -translate-y-6 scale-75 transform text-muted-foreground duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:left-0 peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:text-primary">Email Address</Label>
-                                        </div>
-                                        <FormMessage />
+                                            <FormMessage />
                                         </FormItem>
                                     )}
                                 />
@@ -208,7 +203,7 @@ export default function LoginForm() {
                                     name="pattern"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <Label className="text-muted-foreground">Login Pattern</Label>
+                                            <FormLabel>Login Pattern</FormLabel>
                                             <FormControl>
                                                 <PatternLock 
                                                     onChange={(pattern) => {
@@ -237,13 +232,11 @@ export default function LoginForm() {
                                     name="email"
                                     render={({ field }) => (
                                         <FormItem>
-                                        <div className="relative">
+                                            <FormLabel>Email Address</FormLabel>
                                             <FormControl>
-                                                <Input placeholder=" " {...field} disabled={isLoading} className="peer block w-full appearance-none border-0 border-b-2 bg-transparent px-0 py-2.5 focus:border-primary focus:outline-none focus:ring-0" />
+                                                <Input placeholder="e.g. jane.doe@example.com" {...field} disabled={isLoading} />
                                             </FormControl>
-                                            <Label className="absolute top-3 -z-10 origin-[0] -translate-y-6 scale-75 transform text-muted-foreground duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:left-0 peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:text-primary">Email Address</Label>
-                                        </div>
-                                        <FormMessage />
+                                            <FormMessage />
                                         </FormItem>
                                     )}
                                 />
@@ -252,12 +245,10 @@ export default function LoginForm() {
                                     name="pin"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <div className="relative">
-                                                <FormControl>
-                                                    <Input type="password" maxLength={4} placeholder=" " {...field} className="peer font-mono tracking-[0.5em] text-center block w-full appearance-none border-0 border-b-2 bg-transparent px-0 py-2.5 focus:border-primary focus:outline-none focus:ring-0"/>
-                                                </FormControl>
-                                                <Label className="absolute top-3 -z-10 origin-[0] -translate-y-6 scale-75 transform text-muted-foreground duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:left-0 peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:text-primary">4-Digit PIN</Label>
-                                            </div>
+                                            <FormLabel>4-Digit PIN</FormLabel>
+                                            <FormControl>
+                                                <Input type="password" maxLength={4} placeholder="&#x2022;&#x2022;&#x2022;&#x2022;" {...field} className="font-mono tracking-[0.5em] text-center" />
+                                            </FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}
@@ -280,5 +271,5 @@ export default function LoginForm() {
         </Card>
         <DeveloperCredit />
         </main>
-    );
+  );
 }
