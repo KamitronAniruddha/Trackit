@@ -108,10 +108,7 @@ export default function LoginForm() {
   }
 
   return (
-    <main className="flex min-h-screen w-full flex-col items-center justify-center bg-[#0a0a0a] p-4 overflow-hidden">
-        <div className="fixed inset-0 -z-10 h-full w-full bg-[#000000] bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
-        <div className="fixed inset-0 -z-20 h-full w-full bg-gradient-to-br from-primary/10 via-background to-accent/10 animate-background-pan" />
-      
+    <main className="flex min-h-screen w-full flex-col items-center justify-center p-4">
         <Card className="relative w-full max-w-md overflow-hidden bg-background/80 backdrop-blur-xl border-border/20 shadow-2xl shadow-primary/10 animate-[fade-in-up_1s_ease-out]">
             <div className="relative">
                 <CardHeader className="text-center">
@@ -130,7 +127,7 @@ export default function LoginForm() {
                     </TabsList>
                     <TabsContent value="password" className="pt-6">
                         <Form {...passwordForm}>
-                        <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-8">
+                        <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-6">
                             <FormField
                             control={passwordForm.control}
                             name="email"
@@ -184,7 +181,7 @@ export default function LoginForm() {
                     </TabsContent>
                     <TabsContent value="pattern" className="pt-6">
                         <Form {...patternForm}>
-                            <form onSubmit={patternForm.handleSubmit(onPatternSubmit)} className="space-y-8">
+                            <form onSubmit={patternForm.handleSubmit(onPatternSubmit)} className="space-y-6">
                                 <FormField
                                     control={patternForm.control}
                                     name="email"
@@ -226,7 +223,7 @@ export default function LoginForm() {
                     </TabsContent>
                     <TabsContent value="pin" className="pt-6">
                         <Form {...pinForm}>
-                            <form onSubmit={pinForm.handleSubmit(onPinSubmit)} className="space-y-8">
+                            <form onSubmit={pinForm.handleSubmit(onPinSubmit)} className="space-y-6">
                                 <FormField
                                     control={pinForm.control}
                                     name="email"

@@ -125,10 +125,7 @@ export default function SignupForm() {
   }
 
   return (
-     <main className="flex min-h-screen w-full flex-col items-center justify-center bg-[#0a0a0a] p-4 overflow-hidden">
-        <div className="fixed inset-0 -z-10 h-full w-full bg-[#000000] bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
-        <div className="fixed inset-0 -z-20 h-full w-full bg-gradient-to-br from-primary/10 via-background to-accent/10 animate-background-pan" />
-      
+     <main className="flex min-h-screen w-full flex-col items-center justify-center p-4">
         <Card className="relative w-full max-w-md overflow-hidden bg-background/80 backdrop-blur-xl border-border/20 shadow-2xl shadow-primary/10 animate-[fade-in-up_1s_ease-out]">
         <div className="relative">
           <CardHeader className="text-center">
@@ -140,7 +137,7 @@ export default function SignupForm() {
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField
                   control={form.control}
                   name="name"
