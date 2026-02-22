@@ -15,7 +15,6 @@ import {
   FormControl,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -27,6 +26,7 @@ import { useFirebaseApp, useFirestore } from '@/firebase/provider';
 import { DeveloperCredit } from './developer-credit';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { PatternLock } from './ui/pattern-lock';
+import { Label } from './ui/label';
 
 
 const formSchema = z.object({
@@ -81,14 +81,12 @@ export default function SignupForm() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       
-      // Update Auth profile
       await updateProfile(userCredential.user, {
         displayName: values.name,
       });
 
-      // Create user document in Firestore
       const userDocRef = doc(firestore, 'users', userCredential.user.uid);
-      const accessCode = Math.random().toString().slice(2, 8); // 6-digit random code
+      const accessCode = Math.random().toString().slice(2, 8);
 
       const userData = {
         displayName: values.name,
@@ -97,7 +95,7 @@ export default function SignupForm() {
         createdAt: serverTimestamp(),
         isBanned: false,
         isDeleted: false,
-        role: 'user', // Always assign 'user' role on client-side signup
+        role: 'user',
         isPremium: false,
         accountStatus: 'demo',
         accessCode: accessCode,
@@ -127,29 +125,33 @@ export default function SignupForm() {
   }
 
   return (
-    <main className="flex min-h-screen w-full flex-col items-center justify-center bg-transparent p-4">
-      <Card className="relative w-full max-w-md overflow-hidden border-primary/20 shadow-2xl shadow-primary/10">
-        <div className="absolute inset-0 bg-gradient-to-br from-card to-secondary/10" />
+     <main className="flex min-h-screen w-full flex-col items-center justify-center bg-[#0a0a0a] p-4 overflow-hidden">
+        <div className="fixed inset-0 -z-10 h-full w-full bg-[#000000] bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
+        <div className="fixed inset-0 -z-20 h-full w-full bg-gradient-to-br from-primary/10 via-background to-accent/10 animate-background-pan" />
+      
+        <Card className="relative w-full max-w-md overflow-hidden bg-background/80 backdrop-blur-xl border-border/20 shadow-2xl shadow-primary/10 animate-[fade-in-up_1s_ease-out]">
         <div className="relative">
           <CardHeader className="text-center">
-            <div className="mx-auto mb-4">
-              <NeetProgressLogo className="h-16 w-16" />
+            <div className="mx-auto mb-4 h-20 w-20">
+              <NeetProgressLogo className="h-full w-full" />
             </div>
             <CardTitle className="text-3xl font-bold tracking-tight">Create an Account</CardTitle>
             <CardDescription>Start your journey to success today.</CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                 <FormField
                   control={form.control}
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Full Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Your Name" {...field} disabled={isLoading} />
-                      </FormControl>
+                      <div className="relative">
+                        <FormControl>
+                            <Input placeholder=" " {...field} disabled={isLoading} className="peer block w-full appearance-none border-0 border-b-2 bg-transparent px-0 py-2.5 focus:border-primary focus:outline-none focus:ring-0" />
+                        </FormControl>
+                        <Label className="absolute top-3 -z-10 origin-[0] -translate-y-6 scale-75 transform text-muted-foreground duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:left-0 peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:text-primary">Full Name</Label>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -159,10 +161,12 @@ export default function SignupForm() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input placeholder="you@example.com" {...field} disabled={isLoading} />
-                      </FormControl>
+                      <div className="relative">
+                        <FormControl>
+                            <Input placeholder=" " {...field} disabled={isLoading} className="peer block w-full appearance-none border-0 border-b-2 bg-transparent px-0 py-2.5 focus:border-primary focus:outline-none focus:ring-0" />
+                        </FormControl>
+                        <Label className="absolute top-3 -z-10 origin-[0] -translate-y-6 scale-75 transform text-muted-foreground duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:left-0 peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:text-primary">Email Address</Label>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -173,7 +177,7 @@ export default function SignupForm() {
                     name="authMethod"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Authentication Method</FormLabel>
+                            <Label>Authentication Method</Label>
                              <FormControl>
                                 <RadioGroup
                                 onValueChange={(value) => {
@@ -189,13 +193,13 @@ export default function SignupForm() {
                                     <FormControl>
                                     <RadioGroupItem value="password" />
                                     </FormControl>
-                                    <FormLabel className="font-normal">Password</FormLabel>
+                                    <Label className="font-normal">Password</Label>
                                 </FormItem>
                                 <FormItem className="flex items-center space-x-2 space-y-0">
                                     <FormControl>
                                     <RadioGroupItem value="pattern" />
                                     </FormControl>
-                                    <FormLabel className="font-normal">Pattern</FormLabel>
+                                    <Label className="font-normal">Pattern</Label>
                                 </FormItem>
                                 </RadioGroup>
                             </FormControl>
@@ -208,16 +212,16 @@ export default function SignupForm() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{authMethod === 'password' ? 'Password' : 'Draw Your Pattern'}</FormLabel>
+                      <Label className="text-muted-foreground">{authMethod === 'password' ? 'Password' : 'Draw Your Pattern'}</Label>
                       <FormControl>
                         {authMethod === 'password' ? (
                             <div className="relative">
                                 <Input
                                     type={showPassword ? 'text' : 'password'}
-                                    placeholder="••••••••"
+                                    placeholder=" "
                                     {...field}
                                     disabled={isLoading}
-                                    className="pr-10"
+                                    className="peer block w-full appearance-none border-0 border-b-2 bg-transparent px-0 py-2.5 pr-10 focus:border-primary focus:outline-none focus:ring-0"
                                 />
                                 <Button
                                     type="button"
