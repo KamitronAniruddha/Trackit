@@ -131,6 +131,19 @@ export function UserList() {
         }
     };
 
+    const handleRevokePremium = async (userToDowngrade: UserWithId) => {
+        const userRef = doc(firestore, 'users', userToDowngrade.id);
+        try {
+            await updateDoc(userRef, {
+                isPremium: false,
+                accountStatus: 'demo',
+            });
+            toast({ title: 'Premium Revoked', description: `${userToDowngrade.displayName}'s premium access has been revoked.` });
+        } catch (e: any) {
+            toast({ variant: 'destructive', title: 'Error', description: `Failed to revoke premium: ${e.message}` });
+        }
+    };
+
     const handleDeleteUser = async () => {
         if (!userToDelete) return;
         setIsDeleting(true);
@@ -270,7 +283,12 @@ export function UserList() {
                                                                 ? <DropdownMenuItem onClick={() => handleUnbanUser(user)}>Unban User</DropdownMenuItem>
                                                                 : <DropdownMenuItem onSelect={() => setBanUser(user)}>Ban User</DropdownMenuItem>
                                                             }
-                                                            {!user.isPremium && (
+                                                            {user.isPremium ? (
+                                                                <DropdownMenuItem onClick={() => handleRevokePremium(user)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                                                    <Award className="mr-2 h-4 w-4" />
+                                                                    Revoke Premium
+                                                                </DropdownMenuItem>
+                                                            ) : (
                                                                 <DropdownMenuItem onClick={() => handleGrantPremium(user)}>
                                                                     <Award className="mr-2 h-4 w-4" />
                                                                     Grant Premium
