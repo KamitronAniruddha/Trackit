@@ -57,12 +57,3 @@ export interface Group {
     lastMessageSenderId?: string;
     lastMessageSenderName?: string;
 }
-
-export interface BrainDumpNote {
-  id: string;
-  text: string;
-  mood: 'stressed' | 'tired' | 'confused' | 'calm' | 'motivated';
-  subject?: string;
-  createdAt: Timestamp;
-  expiresAt: Timestamp;
-}

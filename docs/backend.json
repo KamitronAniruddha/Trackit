@@ -775,37 +775,6 @@
             "endedAt": { "type": "string", "format": "date-time" }
         },
         "required": ["adminId", "adminName", "userId", "userName", "startedAt"]
-    },
-    "BrainDumpNote": {
-      "title": "Brain Dump Note",
-      "description": "An anonymous thought posted to the Brain Dump Wall.",
-      "type": "object",
-      "properties": {
-        "text": {
-          "type": "string",
-          "description": "The content of the note."
-        },
-        "mood": {
-          "type": "string",
-          "enum": ["stressed", "tired", "confused", "calm", "motivated"],
-          "description": "The mood associated with the note."
-        },
-        "subject": {
-          "type": "string",
-          "description": "Optional subject linked to the note."
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The timestamp when the note was created."
-        },
-        "expiresAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The timestamp when the note should expire."
-        }
-      },
-      "required": ["text", "mood", "createdAt", "expiresAt"]
     }
   },
   "auth": {
@@ -909,12 +878,6 @@
     "/spectateLogs/{logId}": {
       "schema": { "$ref": "#/backend/entities/SpectateLog" },
       "description": "Logs of admin spectate sessions."
-    },
-    "/brainDumps/{dumpId}": {
-      "schema": {
-        "$ref": "#/backend/entities/BrainDumpNote"
-      },
-      "description": "Collection of anonymous brain dump notes. Notes expire after 24 hours."
     }
   }
 }
