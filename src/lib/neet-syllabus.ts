@@ -32,11 +32,22 @@ export const NEET_PHYSICAL_CHEMISTRY_UNITS = {
 };
 
 export const NEET_ORGANIC_CHEMISTRY_UNITS = {
-    "Basic Principles": ["1. Organic Chemistry: Some Basic Principles and Techniques"],
-    "Hydrocarbons & Halides": ["2. Hydrocarbons", "3. Haloalkanes and Haloarenes"],
-    "Oxygen Containing Compounds": ["4. Alcohols, Phenols and Ethers", "5. Aldehydes, Ketones and Carboxylic Acids"],
-    "Nitrogen Containing & Biomolecules": ["6. Amines", "7. Biomolecules"],
-    "Applied Chemistry": ["8. Polymers", "9. Chemistry in Everyday Life"],
+    "Basic Principles": [
+        "1. Practical organic chemistry POC",
+        "2. GOC",
+        "3. Isomerism"
+    ],
+    "Hydrocarbons & Halides": [
+        "4. Hydrocarbons",
+        "5. Haloarenes and Haloalkanes"
+    ],
+    "Compounds with Functional Groups": [
+        "6. Alcohols, Phenols and Ethers",
+        "7. Amines and it's derivatives"
+    ],
+    "Applied Chemistry": [
+        "8. Polymers"
+    ],
 };
 
 export const NEET_INORGANIC_CHEMISTRY_UNITS = {
