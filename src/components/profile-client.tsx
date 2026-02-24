@@ -289,6 +289,7 @@ export function ProfileClient() {
             toast({ title: 'Profile picture updated!' });
             setIsAvatarDialogOpen(false);
         } catch (error: any) {
+            console.error("Profile picture upload failed:", error);
             let description = 'An error occurred during upload.';
             if (error.code === 'storage/unauthorized') {
                 description = "You don't have permission to upload to this location. Please check Firebase Storage security rules.";
@@ -592,6 +593,12 @@ export function ProfileClient() {
                                                 </button>
                                             </DialogTrigger>
                                             <DialogContent className="p-0 max-w-2xl w-auto bg-transparent border-0 shadow-none">
+                                                <DialogHeader className="sr-only">
+                                                    <DialogTitle>Enlarged profile picture</DialogTitle>
+                                                    <DialogDescription>
+                                                        A larger view of {profile.displayName}'s profile picture.
+                                                    </DialogDescription>
+                                                </DialogHeader>
                                                 {profile.photoURL && (
                                                     <Image
                                                         src={profile.photoURL}
