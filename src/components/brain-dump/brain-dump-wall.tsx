@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useFirestore } from '@/firebase/provider';
-import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import type { BrainDumpNote } from '@/lib/types';
 import { Loader2, Send } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
@@ -48,13 +48,17 @@ export function BrainDumpWall() {
 
         // At this point, Firebase auth is ready.
         const notesRef = collection(firestore, 'brainDumps');
-        const q = query(notesRef, where('expiresAt', '>', new Date()), orderBy('expiresAt', 'desc'));
+        const q = query(notesRef, where('expiresAt', '>', new Date()));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const notesList = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             } as BrainDumpNote));
+            
+            // Sort on client since complex orderBy can require manual index creation
+            notesList.sort((a, b) => b.expiresAt.toDate().getTime() - a.expiresAt.toDate().getTime());
+            
             setNotes(notesList);
             setLoading(false);
         }, async (serverError) => {
