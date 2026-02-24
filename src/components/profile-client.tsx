@@ -275,7 +275,7 @@ export function ProfileClient() {
         setIsUploading(true);
     
         try {
-            const filePath = `profile-pictures/${currentUser.uid}/${file.name}`;
+            const filePath = `profile-pictures/${currentUser.uid}/avatar`;
             const storageRef = ref(storage, filePath);
             const uploadResult = await uploadBytes(storageRef, file);
             const photoURL = await getDownloadURL(uploadResult.ref);
@@ -289,10 +289,18 @@ export function ProfileClient() {
             toast({ title: 'Profile picture updated!' });
             setIsAvatarDialogOpen(false);
         } catch (error: any) {
+            let description = 'An error occurred during upload.';
+            if (error.code === 'storage/unauthorized') {
+                description = "You don't have permission to upload to this location. Please check Firebase Storage security rules.";
+            } else if (error.code) {
+                description = `Upload failed with code: ${error.code}`;
+            } else if (error.message) {
+                description = error.message;
+            }
             toast({
                 variant: 'destructive',
                 title: 'Upload Failed',
-                description: error.message || 'An error occurred during upload.',
+                description,
             });
         } finally {
             setIsUploading(false);
@@ -571,7 +579,7 @@ export function ProfileClient() {
                                             <DialogTrigger asChild disabled={!profile.photoURL}>
                                                 <button className="relative group rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background">
                                                     <Avatar className="h-32 w-32 border-4 border-primary/20">
-                                                        <AvatarImage src={profile.photoURL ?? undefined} alt={profile.displayName} />
+                                                        <AvatarImage src={profile.photoURL ?? undefined} alt={profile.displayName} className="object-cover" />
                                                         <AvatarFallback className="text-5xl">
                                                             {profile.displayName?.charAt(0).toUpperCase() ?? 'U'}
                                                         </AvatarFallback>
