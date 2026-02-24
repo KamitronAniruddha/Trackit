@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -17,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, MoreHorizontal, Loader2, Trash2, Eye } from 'lucide-react';
+import { AlertTriangle, MoreHorizontal, Loader2, Trash2, Eye, Award } from 'lucide-react';
 import { 
     DropdownMenu, 
     DropdownMenuContent, 
@@ -119,6 +118,19 @@ export function UserList() {
         }
     };
 
+    const handleGrantPremium = async (userToUpgrade: UserWithId) => {
+        const userRef = doc(firestore, 'users', userToUpgrade.id);
+        try {
+            await updateDoc(userRef, {
+                isPremium: true,
+                accountStatus: 'active',
+            });
+            toast({ title: 'User Upgraded', description: `${userToUpgrade.displayName} has been granted premium access.` });
+        } catch (e: any) {
+            toast({ variant: 'destructive', title: 'Error', description: `Failed to upgrade user: ${e.message}` });
+        }
+    };
+
     const handleDeleteUser = async () => {
         if (!userToDelete) return;
         setIsDeleting(true);
@@ -217,10 +229,12 @@ export function UserList() {
                                     <TableCell>
                                         {user.isBanned ? (
                                             <Badge variant="destructive">Banned</Badge>
+                                        ) : !user.onboardingCompleted ? (
+                                            <Badge variant="outline">Onboarding</Badge>
+                                        ) : user.isPremium ? (
+                                            <Badge variant="secondary">Premium</Badge>
                                         ) : (
-                                            <Badge variant={user.onboardingCompleted ? 'secondary' : 'outline'}>
-                                                {user.onboardingCompleted ? 'Active' : 'Onboarding'}
-                                            </Badge>
+                                            <Badge variant="outline">Demo</Badge>
                                         )}
                                     </TableCell>
                                     <TableCell>
@@ -249,9 +263,25 @@ export function UserList() {
                                                         </DropdownMenuItem>
                                                     )}
 
+                                                    {(adminProfile.role === 'admin' || (adminProfile.role === 'subadmin' && user.role === 'user')) && (
+                                                        <>
+                                                            {(canSpectate) && <DropdownMenuSeparator />}
+                                                            {user.isBanned 
+                                                                ? <DropdownMenuItem onClick={() => handleUnbanUser(user)}>Unban User</DropdownMenuItem>
+                                                                : <DropdownMenuItem onSelect={() => setBanUser(user)}>Ban User</DropdownMenuItem>
+                                                            }
+                                                            {!user.isPremium && (
+                                                                <DropdownMenuItem onClick={() => handleGrantPremium(user)}>
+                                                                    <Award className="mr-2 h-4 w-4" />
+                                                                    Grant Premium
+                                                                </DropdownMenuItem>
+                                                            )}
+                                                        </>
+                                                    )}
+
                                                     {adminProfile.role === 'admin' && (
                                                         <>
-                                                            {canSpectate && <DropdownMenuSeparator />}
+                                                            <DropdownMenuSeparator />
                                                             <DropdownMenuSub>
                                                                 <DropdownMenuSubTrigger>Change Role</DropdownMenuSubTrigger>
                                                                 <DropdownMenuPortal>
@@ -264,18 +294,6 @@ export function UserList() {
                                                                     </DropdownMenuSubContent>
                                                                 </DropdownMenuPortal>
                                                             </DropdownMenuSub>
-                                                            <DropdownMenuSeparator />
-                                                        </>
-                                                    )}
-
-                                                    {(adminProfile.role === 'admin' || (adminProfile.role === 'subadmin' && user.role === 'user')) && (
-                                                        user.isBanned 
-                                                            ? <DropdownMenuItem onClick={() => handleUnbanUser(user)}>Unban User</DropdownMenuItem>
-                                                            : <DropdownMenuItem onSelect={() => setBanUser(user)}>Ban User</DropdownMenuItem>
-                                                    )}
-
-                                                    {adminProfile.role === 'admin' && (
-                                                        <>
                                                             <DropdownMenuSeparator />
                                                             <DropdownMenuItem onSelect={() => setUserToDelete(user)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
                                                                 <Trash2 className="mr-2 h-4 w-4"/>
