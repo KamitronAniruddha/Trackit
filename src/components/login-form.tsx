@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { useState } from 'react';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -48,6 +48,7 @@ export default function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [isSendingReset, setIsSendingReset] = useState(false);
   const [patternError, setPatternError] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   
@@ -107,6 +108,35 @@ export default function LoginForm() {
     performLogin(values.email, values.pattern);
   }
 
+  async function handlePasswordReset() {
+    const email = passwordForm.getValues('email');
+    if (!email || !z.string().email().safeParse(email).success) {
+      toast({
+        variant: 'destructive',
+        title: 'Email Required',
+        description: 'Please enter a valid email address to reset your password.',
+      });
+      passwordForm.setFocus('email');
+      return;
+    }
+    setIsSendingReset(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      toast({
+        title: 'Password Reset Email Sent',
+        description: 'Please check your inbox to reset your password.',
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error Sending Email',
+        description: error.message || 'An unexpected error occurred.',
+      });
+    } finally {
+      setIsSendingReset(false);
+    }
+  }
+
   return (
     <main className="flex min-h-screen w-full flex-col items-center justify-center p-4">
         <Card className="relative w-full max-w-md overflow-hidden bg-background/80 backdrop-blur-xl border-border/20 shadow-2xl shadow-primary/10 animate-[fade-in-up_1s_ease-out]">
@@ -146,7 +176,23 @@ export default function LoginForm() {
                             name="password"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Password</FormLabel>
+                                    <div className="flex justify-between items-center">
+                                        <FormLabel>Password</FormLabel>
+                                        <Button
+                                            type="button"
+                                            variant="link"
+                                            className="p-0 h-auto text-xs text-muted-foreground hover:text-primary"
+                                            onClick={handlePasswordReset}
+                                            disabled={isSendingReset || isLoading}
+                                        >
+                                            {isSendingReset ? (
+                                                <>
+                                                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                                                    Sending...
+                                                </>
+                                            ) : 'Forgot Password?'}
+                                        </Button>
+                                    </div>
                                     <div className="relative">
                                         <FormControl>
                                             <Input 
