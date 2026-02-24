@@ -1,3 +1,4 @@
+
 export const JEE_PHYSICS_UNITS = {
   "Units and Measurement": ["1. Physics and Measurement"],
   "Mechanics": [
@@ -37,17 +38,19 @@ export const JEE_PHYSICAL_CHEMISTRY_UNITS = {
 };
 
 export const JEE_ORGANIC_CHEMISTRY_UNITS = {
-    "Basic Principles": ["1. Purification and Characterisation of Organic Compounds", "2. Some Basic Principles of Organic Chemistry"],
-    "Hydrocarbons": ["3. Hydrocarbons"],
+    "Basic Principles": [
+        "1. Practical organic chemistry POC",
+        "2. GOC",
+        "3. Isomerism"
+    ],
+    "Hydrocarbons": ["4. Hydrocarbons"],
     "Compounds with Functional Groups": [
-        "4. Organic Compounds Containing Halogens",
-        "5. Organic Compounds Containing Oxygen",
-        "6. Organic Compounds Containing Nitrogen",
+        "5. Haloarenes and Haloalkanes",
+        "6. Alcohol ,Phenol and ethers",
+        "7. Amines and it's derivatives",
     ],
     "Applied Chemistry": [
-        "7. Polymers",
         "8. Biomolecules",
-        "9. Chemistry in Everyday Life",
     ],
 };
 
