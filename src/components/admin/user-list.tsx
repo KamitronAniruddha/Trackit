@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -59,7 +60,7 @@ export function UserList() {
     useEffect(() => {
         setLoading(true);
         const usersRef = collection(firestore, 'users');
-        const q = query(usersRef, where('isDeleted', '==', false), orderBy('displayName'));
+        const q = query(usersRef, where('isDeleted', '==', false));
 
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
             const userList = querySnapshot.docs
@@ -68,6 +69,8 @@ export function UserList() {
                     uid: doc.id,
                     ...doc.data(),
                 } as UserWithId));
+            
+            userList.sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''));
             
             setUsers(userList);
             setLoading(false);
