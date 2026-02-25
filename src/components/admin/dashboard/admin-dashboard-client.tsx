@@ -34,7 +34,7 @@ const chartConfig = {
     admin: { label: "Admin", color: "hsl(var(--chart-1))" },
     subadmin: { label: "Sub-Admin", color: "hsl(var(--chart-2))" },
     user: { label: "User", color: "hsl(var(--chart-3))" },
-} satisfies ChartConfig;
+} as ChartConfig;
 
 export function AdminDashboardClient() {
     const firestore = useFirestore();
@@ -48,7 +48,7 @@ export function AdminDashboardClient() {
         const unbanQuery = query(collection(firestore, 'unbanRequests'), where('status', '==', 'pending'));
         const contactQuery = query(collection(firestore, 'contactSubmissions'), where('isRead', '==', false));
 
-        const unsubUsers = onSnapshot(usersQuery, snap => setUsers(snap.docs.map(d => d.data() as UserProfile)), () => setLoading(false));
+        const unsubUsers = onSnapshot(usersQuery, snap => setUsers(snap.docs.map(d => ({ uid: d.id, ...d.data() } as UserProfile))), () => setLoading(false));
         const unsubUnban = onSnapshot(unbanQuery, snap => setUnbanRequests(snap.size));
         const unsubContact = onSnapshot(contactQuery, snap => setContactMessages(snap.size));
 
