@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -45,6 +44,16 @@ import {
   DropdownMenuRadioItem,
 } from '@/components/ui/dropdown-menu';
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+  } from "@/components/ui/alert-dialog";
+import {
   SidebarProvider,
   Sidebar,
   SidebarHeader,
@@ -59,7 +68,7 @@ import {
 import { NeetProgressLogo } from './icons';
 import { useUser } from '@/firebase/auth/use-user';
 import { useUserProfile } from '@/contexts/user-profile-context';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { DeveloperCredit } from './developer-credit';
 import { cn } from '@/lib/utils';
 import { useSpectate } from '@/contexts/spectate-context';
@@ -153,6 +162,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     redirectTo: '/login',
   });
   const { profile, loading: profileLoading, updateProfileSetting } = useUserProfile();
+  const [isLogoutAlertOpen, setIsLogoutAlertOpen] = useState(false);
 
   const handleLogout = async () => {
     await signOut();
@@ -206,6 +216,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const showBackButton = pathname !== '/dashboard';
 
   return (
+    <>
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
@@ -278,7 +289,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 <span>{profile?.darkMode ?? true ? 'Light Mode' : 'Dark Mode'}</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>
+              <DropdownMenuItem
+                onSelect={(e) => {
+                  e.preventDefault();
+                  setIsLogoutAlertOpen(true);
+                }}
+                className="text-destructive focus:text-destructive focus:bg-destructive/10"
+              >
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>
@@ -332,5 +349,29 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         <DeveloperCredit />
       </SidebarInset>
     </SidebarProvider>
+
+    <AlertDialog open={isLogoutAlertOpen} onOpenChange={setIsLogoutAlertOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader className="items-center text-center">
+                <div className="p-3 bg-destructive/10 rounded-full w-fit mb-2">
+                    <LogOut className="h-8 w-8 text-destructive" />
+                </div>
+                <AlertDialogTitle className="text-2xl">Are you sure you want to log out?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    You will need to sign in again to access your dashboard. Any unsaved changes will be lost.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="sm:justify-center gap-2 pt-4">
+                <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                    onClick={handleLogout}
+                    className={cn(buttonVariants({ variant: "destructive" }), "w-full sm:w-auto")}
+                >
+                    Yes, Log Out
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+  </>
   );
 }
