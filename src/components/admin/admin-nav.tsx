@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookCopy, Users, ShieldQuestion, Award, Mail } from 'lucide-react';
+import { LayoutDashboard, BookCopy, Users, ShieldQuestion, Award, Mail } from 'lucide-react';
 import { useUserProfile } from '@/contexts/user-profile-context';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 
@@ -10,6 +10,7 @@ export function AdminNav() {
     const { profile } = useUserProfile();
 
     const allNavItems = [
+        { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'subadmin'] },
         { href: '/admin/users', label: 'Users', icon: Users, roles: ['admin', 'subadmin'] },
         { href: '/admin/syllabus', label: 'Syllabus', icon: BookCopy, roles: ['admin'] },
         { href: '/admin/requests', label: 'Unban Requests', icon: ShieldQuestion, roles: ['admin', 'subadmin'] },
@@ -25,7 +26,7 @@ export function AdminNav() {
                 <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                         asChild
-                        isActive={pathname.startsWith(item.href)}
+                        isActive={pathname === item.href}
                         tooltip={{ children: item.label, side: 'right' }}
                     >
                         <Link href={item.href}>

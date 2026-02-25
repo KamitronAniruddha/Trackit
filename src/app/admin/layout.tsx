@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   Loader2,
   Home,
@@ -48,14 +48,27 @@ import {
   } from "@/components/ui/alert-dialog";
 import { cn } from '@/lib/utils';
 
+const routeTitles: { [key: string]: string } = {
+    '/admin/dashboard': 'Admin Dashboard',
+    '/admin/users': 'User Management',
+    '/admin/syllabus': 'Syllabus Management',
+    '/admin/requests': 'Unban Requests',
+    '/admin/contact': 'Contact Messages',
+    '/admin/premium': 'Premium Management',
+};
+
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { profile, loading: profileLoading } = useUserProfile();
   const { user, signOut, loading: userLoading } = useUser();
   const router = useRouter();
+  const pathname = usePathname();
   const { toast } = useToast();
   const [isLogoutAlertOpen, setIsLogoutAlertOpen] = useState(false);
 
   const loading = profileLoading || userLoading;
+  const pageTitle = routeTitles[pathname] || 'Admin';
+
 
   useEffect(() => {
     if (!loading) {
@@ -145,10 +158,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
             <div className="flex items-center gap-2">
               <SidebarTrigger className="md:hidden" />
-              <Button variant="outline" size="icon" onClick={() => router.back()} aria-label="Go back">
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-               <h1 className="text-xl font-semibold tracking-tight">Admin Dashboard</h1>
+              {pathname !== '/admin/dashboard' && (
+                <Button variant="outline" size="icon" onClick={() => router.back()} aria-label="Go back">
+                    <ArrowLeft className="h-4 w-4" />
+                </Button>
+              )}
+               <h1 className="text-xl font-semibold tracking-tight">{pageTitle}</h1>
             </div>
             <Button asChild variant="outline">
                 <Link href="/dashboard">
