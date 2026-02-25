@@ -47,6 +47,7 @@ import {
     AlertDialogTitle,
   } from "@/components/ui/alert-dialog";
 import { cn } from '@/lib/utils';
+import { useSpectate } from '@/contexts/spectate-context';
 
 const routeTitles: { [key: string]: string } = {
     '/admin/dashboard': 'Admin Dashboard',
@@ -61,6 +62,7 @@ const routeTitles: { [key: string]: string } = {
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { profile, loading: profileLoading } = useUserProfile();
   const { user, signOut, loading: userLoading } = useUser();
+  const { stopSpectating } = useSpectate();
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
@@ -86,6 +88,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [user, profile, loading, router, toast]);
 
   const handleLogout = async () => {
+    await stopSpectating();
     await signOut();
     router.push('/login');
   };

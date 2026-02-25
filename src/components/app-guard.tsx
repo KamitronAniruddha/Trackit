@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { PinLockScreen } from './pin-lock-screen';
 
-const publicRoutes = ['/login', '/signup'];
+const publicRoutes = ['/', '/login', '/signup', '/reset-password'];
 
 export function AppGuard({ children }: { children: React.ReactNode }) {
     const { profile, loading: profileLoading } = useUserProfile();
@@ -64,8 +64,10 @@ export function AppGuard({ children }: { children: React.ReactNode }) {
             // If the user is an admin, let them pass. 
             // The AdminLayout will handle its own security for /admin routes.
             // This avoids redirecting admins to onboarding, etc.
-            if (profile.role === 'admin') {
-                return;
+            if (['admin', 'subadmin'].includes(profile.role || '')) {
+                if (pathname.startsWith('/admin')) {
+                    return;
+                }
             }
 
             // From here on, we are only dealing with non-admin users.
@@ -88,7 +90,7 @@ export function AppGuard({ children }: { children: React.ReactNode }) {
             }
 
             // Rule: If user is fully onboarded and active, but on a "flow" page, redirect them to dashboard.
-            if (onboardingCompleted && pathname === '/onboarding') {
+            if (onboardingCompleted && (pathname === '/onboarding' || pathname === '/pending-approval')) {
                 router.replace('/dashboard');
             }
         }
