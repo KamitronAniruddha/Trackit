@@ -599,15 +599,45 @@ export function ProfileClient() {
                                                         A larger view of {profile.displayName}'s profile picture.
                                                     </DialogDescription>
                                                 </DialogHeader>
-                                                {profile.photoURL && (
-                                                    <Image
-                                                        src={profile.photoURL}
-                                                        alt={profile.displayName}
-                                                        width={1000}
-                                                        height={1000}
-                                                        className="object-contain rounded-lg max-h-[80vh] w-auto h-auto"
-                                                    />
-                                                )}
+                                                {(() => {
+                                                    const allowedHosts = [
+                                                        'placehold.co',
+                                                        'images.unsplash.com',
+                                                        'picsum.photos',
+                                                        'firebasestudio.ai',
+                                                        'drive.google.com',
+                                                        'lh3.googleusercontent.com',
+                                                        'drive.usercontent.google.com',
+                                                        'firebasestorage.googleapis.com'
+                                                    ];
+
+                                                    if (!profile.photoURL) return null;
+
+                                                    try {
+                                                        const hostname = new URL(profile.photoURL).hostname;
+                                                        if (allowedHosts.includes(hostname)) {
+                                                            return (
+                                                                <Image
+                                                                    src={profile.photoURL}
+                                                                    alt={profile.displayName}
+                                                                    width={1000}
+                                                                    height={1000}
+                                                                    className="object-contain rounded-lg max-h-[80vh] w-auto h-auto"
+                                                                />
+                                                            );
+                                                        }
+                                                    } catch (e) {
+                                                        // Invalid URL, falls through to the error message
+                                                    }
+
+                                                    return (
+                                                        <div className="bg-background rounded-lg p-8 flex flex-col items-center justify-center h-96 w-96 text-muted-foreground">
+                                                            <AlertTriangle className="h-10 w-10 text-destructive mb-4" />
+                                                            <p className="font-semibold">Invalid Image URL</p>
+                                                            <p className="text-xs text-center mt-2">The provided URL for this profile picture is not valid or comes from an untrusted source.</p>
+                                                        </div>
+                                                    );
+                                                })()}
                                             </DialogContent>
                                         </Dialog>
                                         <Button
