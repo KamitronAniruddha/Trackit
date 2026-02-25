@@ -1,9 +1,8 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useFirestore } from '@/firebase/provider';
-import { collection, query, orderBy, doc, updateDoc, Timestamp, onSnapshot, where } from 'firebase/firestore';
+import { collection, query, orderBy, doc, updateDoc, Timestamp, onSnapshot, where, writeBatch } from 'firebase/firestore';
 import { useUserProfile, type UserProfile } from '@/contexts/user-profile-context';
 import {
   Table,
@@ -38,6 +37,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useSpectate } from '@/contexts/spectate-context';
+import { Checkbox } from '@/components/ui/checkbox';
 
 type UserWithId = UserProfile & { id: string };
 
@@ -50,12 +50,14 @@ export function UserList() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
     const [banUser, setBanUser] = useState<UserWithId | null>(null);
     const [banDuration, setBanDuration] = useState(24); // default hours
     const [isBanning, setIsBanning] = useState(false);
 
     const [userToDelete, setUserToDelete] = useState<UserWithId | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isBulkDeleteAlertOpen, setIsBulkDeleteAlertOpen] = useState(false);
 
     useEffect(() => {
         setLoading(true);
@@ -146,7 +148,7 @@ export function UserList() {
         }
     };
 
-    const handleDeleteUser = async () => {
+    const handleSingleDeleteUser = async () => {
         if (!userToDelete) return;
         setIsDeleting(true);
     
@@ -161,6 +163,35 @@ export function UserList() {
         } finally {
           setIsDeleting(false);
           setUserToDelete(null);
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedUsers.length === 0) return;
+        setIsDeleting(true);
+
+        const batch = writeBatch(firestore);
+        selectedUsers.forEach(userId => {
+            const userRef = doc(firestore, 'users', userId);
+            batch.update(userRef, { isDeleted: true });
+        });
+
+        try {
+            await batch.commit();
+            toast({
+                title: `${selectedUsers.length} user(s) deleted`,
+                description: 'The selected users have been soft-deleted.',
+            });
+            setSelectedUsers([]);
+        } catch (e: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Bulk Delete Failed',
+                description: e.message || 'An error occurred while deleting users.',
+            });
+        } finally {
+            setIsDeleting(false);
+            setIsBulkDeleteAlertOpen(false);
         }
     };
 
@@ -206,12 +237,58 @@ export function UserList() {
         return <p className="text-muted-foreground text-center">No users found.</p>
     }
 
+    const nonAdminUsers = users.filter(u => u.role !== 'admin');
+
     return (
         <>
+            <div className="mb-4">
+                {selectedUsers.length > 0 && adminProfile?.role === 'admin' && (
+                     <AlertDialog open={isBulkDeleteAlertOpen} onOpenChange={setIsBulkDeleteAlertOpen}>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete ({selectedUsers.length}) Selected Users
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will soft-delete {selectedUsers.length} user(s). They will not be able to log in, and their profiles will be hidden. This action can only be undone manually in Firestore.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleBulkDelete} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                     {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Delete Users
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                )}
+            </div>
             <div className="rounded-md border">
                 <Table>
                     <TableHeader>
                         <TableRow>
+                            <TableHead className="px-4">
+                                {adminProfile?.role === 'admin' && (
+                                    <Checkbox
+                                        checked={
+                                            selectedUsers.length === nonAdminUsers.length && nonAdminUsers.length > 0
+                                                ? true
+                                                : selectedUsers.length > 0
+                                                ? 'indeterminate'
+                                                : false
+                                        }
+                                        onCheckedChange={(checked) => {
+                                            setSelectedUsers(checked ? nonAdminUsers.map(u => u.id) : []);
+                                        }}
+                                        aria-label="Select all non-admin users"
+                                    />
+                                )}
+                            </TableHead>
                             <TableHead>User</TableHead>
                             <TableHead>Email</TableHead>
                             <TableHead>Exam</TableHead>
@@ -225,7 +302,20 @@ export function UserList() {
                             const canSpectate = user.spectatePermission?.status === 'granted' && user.spectatePermission.expiresAt && user.spectatePermission.expiresAt.toDate() > new Date();
 
                             return (
-                                <TableRow key={user.id}>
+                                <TableRow key={user.id} data-state={selectedUsers.includes(user.id) ? "selected" : ""}>
+                                    <TableCell className="px-4">
+                                        {adminProfile && user.role !== 'admin' && (
+                                            <Checkbox
+                                                checked={selectedUsers.includes(user.id)}
+                                                onCheckedChange={(checked) => {
+                                                    setSelectedUsers(prev => 
+                                                        checked ? [...prev, user.id] : prev.filter(id => id !== user.id)
+                                                    );
+                                                }}
+                                                aria-label={`Select user ${user.displayName}`}
+                                            />
+                                        )}
+                                    </TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-3">
                                             <Avatar className="h-8 w-8">
@@ -372,7 +462,7 @@ export function UserList() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteUser} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                        <AlertDialogAction onClick={handleSingleDeleteUser} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
                              {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Delete User
                         </AlertDialogAction>
