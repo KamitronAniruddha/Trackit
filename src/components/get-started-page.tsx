@@ -20,7 +20,7 @@ const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementTy
 export function GetStartedPage() {
   return (
     <div className="w-full min-h-screen bg-background text-foreground animate-fade-in">
-      <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-4 bg-background/80 backdrop-blur-sm border-b border-border/50">
+      <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-4 backdrop-blur-sm border-b border-white/5">
         <div className="flex items-center gap-2 animate-glow">
           <NeetProgressLogo className="h-8 w-8 text-primary" />
           <span className="text-xl font-semibold">Exam Tracker</span>
