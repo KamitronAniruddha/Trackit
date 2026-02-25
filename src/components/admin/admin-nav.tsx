@@ -2,8 +2,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { BookCopy, Users, ShieldQuestion, Award, Mail } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { useUserProfile } from '@/contexts/user-profile-context';
+import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 
 export function AdminNav() {
     const pathname = usePathname();
@@ -20,20 +20,21 @@ export function AdminNav() {
     const navItems = allNavItems.filter(item => item.roles.includes(profile?.role || ''));
     
     return (
-        <nav className="grid items-start gap-1">
+        <SidebarMenu>
             {navItems.map(item => (
-                <Button
-                    key={item.href}
-                    asChild
-                    variant={pathname.startsWith(item.href) ? 'secondary' : 'ghost'}
-                    className="w-full justify-start"
-                >
-                    <Link href={item.href}>
-                        <item.icon className="mr-3 h-4 w-4" />
-                        {item.label}
-                    </Link>
-                </Button>
+                <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                        asChild
+                        isActive={pathname.startsWith(item.href)}
+                        tooltip={{ children: item.label, side: 'right' }}
+                    >
+                        <Link href={item.href}>
+                            <item.icon />
+                            <span>{item.label}</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
             ))}
-        </nav>
+        </SidebarMenu>
     );
 }
