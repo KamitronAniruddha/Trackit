@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useFirestore } from '@/firebase/provider';
-import { collection, query, orderBy, doc, updateDoc, Timestamp, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, doc, updateDoc, Timestamp, onSnapshot, where } from 'firebase/firestore';
 import { useUserProfile, type UserProfile } from '@/contexts/user-profile-context';
 import {
   Table,
@@ -59,7 +59,7 @@ export function UserList() {
     useEffect(() => {
         setLoading(true);
         const usersRef = collection(firestore, 'users');
-        const q = query(usersRef, orderBy('displayName'));
+        const q = query(usersRef, where('isDeleted', '==', false), orderBy('displayName'));
 
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
             const userList = querySnapshot.docs
@@ -67,15 +67,14 @@ export function UserList() {
                     id: doc.id,
                     uid: doc.id,
                     ...doc.data(),
-                } as UserWithId))
-                .filter(user => user.isDeleted !== true); // Filter out deleted users
+                } as UserWithId));
             
             setUsers(userList);
             setLoading(false);
             setError(null);
         }, (err: any) => {
             console.error("Error fetching users:", err);
-            setError("You don't have permission to view users. Check Firestore security rules.");
+            setError("You don't have permission to view users. Check Firestore security rules or required indexes.");
             setLoading(false);
         });
 
