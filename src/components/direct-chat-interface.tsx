@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -160,7 +161,7 @@ export function DirectChatInterface({ conversationId }: { conversationId: string
                         </Link>
                     </Button>
                     <Avatar className="h-10 w-10">
-                        <AvatarImage src={otherUser.photoURL ?? undefined} />
+                        <AvatarImage src={otherUser.photoURL || undefined} />
                         <AvatarFallback>{otherUser.displayName.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="ml-2">
@@ -176,7 +177,7 @@ export function DirectChatInterface({ conversationId }: { conversationId: string
                     >
                         {msg.senderId !== currentUserProfile?.uid && (
                             <Avatar className="h-8 w-8 self-end">
-                                <AvatarImage src={otherUser.photoURL ?? undefined} />
+                                <AvatarImage src={otherUser.photoURL || undefined} />
                                 <AvatarFallback>{otherUser.displayName?.charAt(0) ?? 'U'}</AvatarFallback>
                             </Avatar>
                         )}

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -139,7 +140,7 @@ export function CommentSheet({ postId, postAuthorId, postAuthorName, isOpen, onO
                     return (
                         <div key={comment.id} className="flex items-start gap-3 group">
                         <Avatar className="h-9 w-9">
-                            <AvatarImage src={comment.userPhotoURL ?? undefined} />
+                            <AvatarImage src={comment.userPhotoURL || undefined} />
                             <AvatarFallback>{comment.userDisplayName?.charAt(0) ?? 'U'}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
@@ -182,7 +183,7 @@ export function CommentSheet({ postId, postAuthorId, postAuthorName, isOpen, onO
             <div className="mt-auto border-t pt-4">
             <form onSubmit={handlePostComment} className="flex items-center gap-2">
                 <Avatar className="h-9 w-9">
-                    <AvatarImage src={profile?.photoURL ?? undefined} />
+                    <AvatarImage src={profile?.photoURL || undefined} />
                     <AvatarFallback>{profile?.displayName?.charAt(0) ?? 'U'}</AvatarFallback>
                 </Avatar>
                 <Input

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -319,7 +320,7 @@ export function UserList() {
                                     <TableCell>
                                         <div className="flex items-center gap-3">
                                             <Avatar className="h-8 w-8">
-                                                <AvatarImage src={user.photoURL ?? undefined} />
+                                                <AvatarImage src={user.photoURL || undefined} />
                                                 <AvatarFallback>
                                                     {user.displayName?.charAt(0).toUpperCase() || 'U'}
                                                 </AvatarFallback>

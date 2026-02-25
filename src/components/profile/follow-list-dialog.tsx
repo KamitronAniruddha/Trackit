@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import { useFirestore } from '@/firebase/provider';
@@ -81,7 +82,7 @@ const UserList = ({ uids }: { uids: string[] }) => {
                 <div key={user.uid} className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <Avatar className="h-10 w-10">
-                            <AvatarImage src={user.photoURL ?? undefined} />
+                            <AvatarImage src={user.photoURL || undefined} />
                             <AvatarFallback>{user.displayName.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <div>

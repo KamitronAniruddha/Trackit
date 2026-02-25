@@ -106,7 +106,7 @@ export function FollowRequestsPopover() {
                                     <div key={req.id} className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <Avatar className="h-9 w-9">
-                                                <AvatarImage src={req.fromUserPhotoURL} />
+                                                <AvatarImage src={req.fromUserPhotoURL || undefined} />
                                                 <AvatarFallback>{req.fromUserName?.charAt(0)}</AvatarFallback>
                                             </Avatar>
                                             <p className="font-medium text-sm">{req.fromUserName}</p>

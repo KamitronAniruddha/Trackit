@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -276,7 +277,7 @@ export function GroupChatInterface({ groupId }: { groupId: string }) {
                                         <div key={id} className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
                                                 <Avatar className="h-9 w-9">
-                                                    <AvatarImage src={member.photoURL ?? undefined}/>
+                                                    <AvatarImage src={member.photoURL || undefined}/>
                                                     <AvatarFallback>{member.displayName.charAt(0)}</AvatarFallback>
                                                 </Avatar>
                                                 <div>
@@ -356,7 +357,7 @@ export function GroupChatInterface({ groupId }: { groupId: string }) {
                         >
                             {msg.senderId !== currentUserProfile?.uid && (
                                 <Avatar className="h-8 w-8 self-end">
-                                    <AvatarImage src={msg.senderPhotoURL ?? undefined} />
+                                    <AvatarImage src={msg.senderPhotoURL || undefined} />
                                     <AvatarFallback>{msg.senderName?.charAt(0) ?? 'U'}</AvatarFallback>
                                 </Avatar>
                             )}

@@ -51,7 +51,7 @@ export function PostCard({ post }: { post: Post }) {
                 <CardHeader className="flex-row gap-3 items-center justify-between">
                     <div className="flex items-center gap-3">
                         <Avatar>
-                            <AvatarImage src={post.userPhotoURL ?? undefined} />
+                            <AvatarImage src={post.userPhotoURL || undefined} />
                             <AvatarFallback>{post.userDisplayName.charAt(0).toUpperCase()}</AvatarFallback>
                         </Avatar>
                         <div>

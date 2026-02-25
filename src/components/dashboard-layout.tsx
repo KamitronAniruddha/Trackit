@@ -263,7 +263,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <DropdownMenuTrigger asChild>
               <button className="flex w-full items-center gap-4 rounded-lg border border-sidebar-border p-3 text-left text-sm transition-colors hover:bg-sidebar-accent">
                 <Avatar className="h-10 w-10">
-                  {user?.photoURL && <AvatarImage src={user.photoURL} alt="User Avatar" />}
+                  <AvatarImage src={user?.photoURL || undefined} alt="User Avatar" />
                   <AvatarFallback>{user?.displayName?.charAt(0).toUpperCase() ?? 'U'}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 truncate">
