@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -290,10 +291,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onSelect={(e) => {
-                  e.preventDefault();
-                  setIsLogoutAlertOpen(true);
-                }}
+                onSelect={() => setIsLogoutAlertOpen(true)}
                 className="text-destructive focus:text-destructive focus:bg-destructive/10"
               >
                 <LogOut className="mr-2 h-4 w-4" />
