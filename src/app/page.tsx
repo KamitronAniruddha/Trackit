@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation';
+import { GetStartedPage } from '@/components/get-started-page';
 
 export default function Home() {
-  redirect('/login');
+  return <GetStartedPage />;
 }
