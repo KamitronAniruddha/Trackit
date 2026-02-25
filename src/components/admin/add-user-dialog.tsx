@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -74,6 +75,8 @@ export function AddUserDialog({ isOpen, onOpenChange }: AddUserDialogProps) {
 
       // Create user document in Firestore using the main app's instance
       const userDocRef = doc(firestore, 'users', user.uid);
+      const accessCode = Math.random().toString().slice(2, 8);
+
       await setDoc(userDocRef, {
         displayName: values.displayName,
         email: values.email,
@@ -82,6 +85,10 @@ export function AddUserDialog({ isOpen, onOpenChange }: AddUserDialogProps) {
         isBanned: false,
         isDeleted: false,
         createdAt: serverTimestamp(),
+        isPremium: false,
+        accountStatus: 'demo',
+        accessCode: accessCode,
+        authMethod: 'password',
       });
 
       setGeneratedPassword(tempPassword);

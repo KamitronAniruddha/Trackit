@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useFirestore } from '@/firebase/provider';
-import { collection, getDocs, doc, writeBatch } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, doc, writeBatch } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle, Check, X } from 'lucide-react';
@@ -34,43 +35,42 @@ export function UnbanRequestsList() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const fetchRequests = async () => {
-            setLoading(true);
+        setLoading(true);
+        const requestsRef = collection(firestore, 'unbanRequests');
+        const q = query(requestsRef, where('status', '==', 'pending'));
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const requestList = snapshot.docs
+                .map(doc => ({
+                    id: doc.id,
+                    ...doc.data(),
+                } as UnbanRequest))
+                .sort((a, b) => {
+                    if (!a.createdAt) return 1;
+                    if (!b.createdAt) return -1;
+                    // Sort descending: newest first
+                    return b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime();
+                });
+            
+            setRequests(requestList);
+            setLoading(false);
             setError(null);
-            try {
-                const requestsRef = collection(firestore, 'unbanRequests');
-                const querySnapshot = await getDocs(requestsRef);
-                const requestList = querySnapshot.docs
-                    .map(doc => ({
-                        id: doc.id,
-                        ...doc.data(),
-                    } as UnbanRequest))
-                    .filter(req => req.status === 'pending')
-                    .sort((a, b) => {
-                        if (!a.createdAt) return 1;
-                        if (!b.createdAt) return -1;
-                        return a.createdAt.toDate().getTime() - b.createdAt.toDate().getTime();
-                    });
+        }, (err: any) => {
+            console.error("Error fetching unban requests:", err);
+            setError("You don't have permission to view unban requests. Check Firestore security rules.");
+            setLoading(false);
+        });
 
-                setRequests(requestList);
-            } catch (err: any) {
-                console.error("Error fetching unban requests:", err);
-                setError("You don't have permission to view unban requests. Check Firestore security rules.");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchRequests();
+        return () => unsubscribe();
     }, [firestore]);
     
     const handleRequest = async (request: UnbanRequest, approve: boolean) => {
         try {
             const batch = writeBatch(firestore);
 
-            // 1. Update the request status
+            // 1. Update the request status (or delete it, which is cleaner)
             const requestRef = doc(firestore, 'unbanRequests', request.id);
-            batch.update(requestRef, { status: 'reviewed' });
+            batch.delete(requestRef);
 
             // 2. Update the user's pending status and ban status if approved
             const userRef = doc(firestore, 'users', request.userId);
@@ -85,12 +85,11 @@ export function UnbanRequestsList() {
 
             await batch.commit();
 
-            // 3. Update UI
-            setRequests(requests.filter(r => r.id !== request.id));
             toast({
                 title: `Request ${approve ? 'Approved' : 'Rejected'}`,
                 description: `${request.userName} has been ${approve ? 'unbanned' : 'kept banned'}.`,
             });
+            // The onSnapshot listener will automatically update the UI
         } catch (e: any) {
             toast({ variant: 'destructive', title: 'Error', description: `Failed to process request: ${e.message}` });
         }
