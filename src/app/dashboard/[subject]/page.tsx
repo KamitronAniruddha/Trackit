@@ -5,10 +5,8 @@ import type { Subject } from '@/lib/types';
 import { useUserProfile } from '@/contexts/user-profile-context';
 import { useSyllabus } from '@/contexts/syllabus-context';
 import { Loader2 } from 'lucide-react';
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { UnitTracker } from '@/components/unit-tracker';
-import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from '@/components/ui/carousel';
-import { useState, useEffect } from 'react';
 
 export default function SubjectPage() {
   const params = useParams();
@@ -16,36 +14,7 @@ export default function SubjectPage() {
   const { profile, loading: profileLoading } = useUserProfile();
   const { syllabuses, loading: syllabusLoading } = useSyllabus();
 
-  const [api, setApi] = useState<CarouselApi>();
-  const [activeTab, setActiveTab] = useState('chapters');
-
   const loading = profileLoading || syllabusLoading;
-
-  useEffect(() => {
-    if (!api) {
-      return;
-    }
-
-    const onSelect = () => {
-      const newTab = api.selectedScrollSnap() === 0 ? 'chapters' : 'units';
-      setActiveTab(newTab);
-    };
-
-    api.on("select", onSelect);
-    
-    return () => {
-      api.off("select", onSelect);
-    };
-  }, [api]);
-
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    if (api) {
-        const slide = value === 'chapters' ? 0 : 1;
-        api.scrollTo(slide);
-    }
-  }
-
 
   if (loading || !profile || !syllabuses || !subject) {
     return (
@@ -76,27 +45,18 @@ export default function SubjectPage() {
         </p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+      <Tabs defaultValue="chapters" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="chapters">Chapters</TabsTrigger>
           <TabsTrigger value="units">Units</TabsTrigger>
         </TabsList>
+        <TabsContent value="chapters" className="mt-4">
+            <ChapterTracker subject={subject as Subject} />
+        </TabsContent>
+        <TabsContent value="units" className="mt-4">
+            <UnitTracker subject={subject as Subject} />
+        </TabsContent>
       </Tabs>
-      
-      <Carousel setApi={setApi} className="w-full -mt-2">
-        <CarouselContent>
-            <CarouselItem>
-                <div className="p-2">
-                    <ChapterTracker subject={subject as Subject} />
-                </div>
-            </CarouselItem>
-            <CarouselItem>
-                <div className="p-2">
-                    <UnitTracker subject={subject as Subject} />
-                </div>
-            </CarouselItem>
-        </CarouselContent>
-      </Carousel>
     </div>
   );
 }
