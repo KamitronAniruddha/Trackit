@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -10,6 +9,7 @@ import { Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { FollowButton } from './follow-button';
 import { Card } from './ui/card';
+import { Badge } from '@/components/ui/badge';
 
 export function UserSearch() {
     const firestore = useFirestore();
@@ -62,7 +62,12 @@ export function UserSearch() {
             {filteredUsers.length > 0 ? (
                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {filteredUsers.map(user => (
-                        <Card key={user.uid} className="p-4 flex flex-col items-center text-center gap-3">
+                        <Card key={user.uid} className="p-4 flex flex-col items-center text-center gap-3 relative">
+                            {user.isPremium ? (
+                                <Badge variant="secondary" className="absolute top-3 right-3">Premium</Badge>
+                            ) : (
+                                <Badge variant="outline" className="absolute top-3 right-3">Demo</Badge>
+                            )}
                             <Avatar className="h-20 w-20">
                                 <AvatarImage src={user.photoURL ?? undefined} />
                                 <AvatarFallback className="text-2xl">{user.displayName.charAt(0)}</AvatarFallback>
