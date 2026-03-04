@@ -1,4 +1,3 @@
-
 'use client';
 
 import { KeySquare, Edit, Loader2, ShieldCheck, Camera, BookCopy, Palette, AlertTriangle, Gem, Eye, Users, Link2, Upload } from 'lucide-react';
@@ -581,7 +580,7 @@ export function ProfileClient() {
                                             <DialogTrigger asChild disabled={!profile.photoURL}>
                                                 <button className="relative group rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background">
                                                     <Avatar className="h-32 w-32 border-4 border-primary/20">
-                                                        <AvatarImage src={profile.photoURL || undefined} alt={profile.displayName} className="object-cover" />
+                                                        <AvatarImage src={profile.photoURL ?? undefined} alt={profile.displayName} className="object-cover" />
                                                         <AvatarFallback className="text-5xl">
                                                             {profile.displayName?.charAt(0).toUpperCase() ?? 'U'}
                                                         </AvatarFallback>
@@ -600,13 +599,15 @@ export function ProfileClient() {
                                                         A larger view of {profile.displayName}'s profile picture.
                                                     </DialogDescription>
                                                 </DialogHeader>
-                                                <Image
-                                                    src={profile.photoURL || ''}
-                                                    alt={profile.displayName}
-                                                    width={1000}
-                                                    height={1000}
-                                                    className="object-contain rounded-lg max-h-[80vh] w-auto h-auto"
-                                                />
+                                                {profile.photoURL && (
+                                                    <Image
+                                                        src={profile.photoURL}
+                                                        alt={profile.displayName}
+                                                        width={1000}
+                                                        height={1000}
+                                                        className="object-contain rounded-lg max-h-[80vh] w-auto h-auto"
+                                                    />
+                                                )}
                                             </DialogContent>
                                         </Dialog>
                                         <Button
