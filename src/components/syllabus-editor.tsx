@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -215,7 +214,7 @@ const SubjectEditorDialog: React.FC<SubjectEditorProps> = ({ exam, subjectKey, s
         setActiveChapterId(event.active.id as string);
     }, []);
 
-    const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
         setActiveChapterId(null);
         
@@ -227,7 +226,7 @@ const SubjectEditorDialog: React.FC<SubjectEditorProps> = ({ exam, subjectKey, s
                 return renumberChapters(reordered);
             });
         }
-    }, []);
+    };
     
     return (
         <DialogContent className="max-w-2xl h-[90vh] flex flex-col">
