@@ -48,6 +48,13 @@ interface SubjectEditorProps {
     onSave: () => Promise<void>;
 }
 
+const renumberChapters = (chapterList: string[]): string[] => {
+  return chapterList.map((chapter, index) => {
+    const chapterText = chapter.replace(/^\d+\.\s*/, '');
+    return `${index + 1}. ${chapterText}`;
+  });
+};
+
 const SubjectEditorDialog: React.FC<SubjectEditorProps> = ({ exam, subjectKey, subjectData, onSave }) => {
     const [chapters, setChapters] = useState<string[]>(subjectData.chapters);
     const [newChapter, setNewChapter] = useState('');
@@ -56,15 +63,23 @@ const SubjectEditorDialog: React.FC<SubjectEditorProps> = ({ exam, subjectKey, s
     const [isSaving, setIsSaving] = useState(false);
     const firestore = useFirestore();
     const { toast } = useToast();
+    const touchStartPos = useRef<{ x: number; y: number } | null>(null);
 
     const subjectTitle = subjectKey.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
     
-    const renumberChapters = (chapterList: string[]): string[] => {
-      return chapterList.map((chapter, index) => {
-        const chapterText = chapter.replace(/^\d+\.\s*/, '');
-        return `${index + 1}. ${chapterText}`;
-      });
-    };
+    const handleMoveChapter = useCallback((index: number, direction: 'up' | 'down') => {
+        setChapters(prevChapters => {
+            const newChapters = [...prevChapters];
+            if (direction === 'up' && index > 0) {
+                [newChapters[index - 1], newChapters[index]] = [newChapters[index], newChapters[index - 1]];
+                return renumberChapters(newChapters);
+            } else if (direction === 'down' && index < newChapters.length - 1) {
+                [newChapters[index + 1], newChapters[index]] = [newChapters[index], newChapters[index + 1]];
+                return renumberChapters(newChapters);
+            }
+            return prevChapters;
+        });
+    }, []);
 
     const handleAddChapter = () => {
         if (newChapter.trim()) {
@@ -79,15 +94,35 @@ const SubjectEditorDialog: React.FC<SubjectEditorProps> = ({ exam, subjectKey, s
         setChapters(renumberChapters(newChapters));
     };
 
-    const handleMoveChapter = (index: number, direction: 'up' | 'down') => {
-        const newChapters = [...chapters];
-        if (direction === 'up' && index > 0) {
-            [newChapters[index - 1], newChapters[index]] = [newChapters[index], newChapters[index - 1]];
-            setChapters(renumberChapters(newChapters));
-        } else if (direction === 'down' && index < chapters.length - 1) {
-            [newChapters[index + 1], newChapters[index]] = [newChapters[index], newChapters[index + 1]];
-            setChapters(renumberChapters(newChapters));
+    const handleTouchStart = (e: React.TouchEvent) => {
+        touchStartPos.current = {
+            x: e.targetTouches[0].clientX,
+            y: e.targetTouches[0].clientY,
+        };
+    };
+
+    const handleTouchEnd = (e: React.TouchEvent, index: number) => {
+        if (!touchStartPos.current) return;
+    
+        const endX = e.changedTouches[0].clientX;
+        const endY = e.changedTouches[0].clientY;
+    
+        const diffX = Math.abs(touchStartPos.current.x - endX);
+        const diffY = touchStartPos.current.y - endY;
+        
+        const VERTICAL_SWIPE_THRESHOLD = 40; // pixels
+        const HORIZONTAL_SWIPE_LIMIT = 30;
+    
+        if (diffX < HORIZONTAL_SWIPE_LIMIT) { // It's a vertical swipe
+            e.preventDefault();
+            if (diffY > VERTICAL_SWIPE_THRESHOLD) { // Swiped up
+                handleMoveChapter(index, 'up');
+            } else if (diffY < -VERTICAL_SWIPE_THRESHOLD) { // Swiped down
+                handleMoveChapter(index, 'down');
+            }
         }
+    
+        touchStartPos.current = null;
     };
 
     const startEditing = (index: number) => {
@@ -142,7 +177,12 @@ const SubjectEditorDialog: React.FC<SubjectEditorProps> = ({ exam, subjectKey, s
                 <ScrollArea className="h-full pr-4">
                     <ul className="space-y-2">
                         {chapters.map((chapter, index) => (
-                            <li key={`${chapter}-${index}`} className="group flex items-center gap-2 p-2 rounded-md bg-muted/50 hover:bg-muted transition-colors">
+                            <li 
+                                key={`${chapter}-${index}`} 
+                                className="group flex items-center gap-2 p-2 rounded-md bg-muted/50 hover:bg-muted transition-colors"
+                                onTouchStart={handleTouchStart}
+                                onTouchEnd={(e) => handleTouchEnd(e, index)}
+                            >
                                {editingIndex === index ? (
                                     <Input
                                         value={editingText}
