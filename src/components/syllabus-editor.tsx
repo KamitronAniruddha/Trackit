@@ -1,29 +1,26 @@
-
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useFirestore } from '@/firebase/provider';
 import { collection, getDocs, doc, setDoc, writeBatch } from 'firebase/firestore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Save, AlertTriangle, Download } from 'lucide-react';
+import { Loader2, Save, AlertTriangle, Download, BookCopy, Edit, Trash2, Plus, ArrowUp, ArrowDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ALL_SUBJECTS } from '@/lib/neet-syllabus';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription, DialogClose, DialogTrigger } from './ui/dialog';
+import { Input } from './ui/input';
+import { ScrollArea } from './ui/scroll-area';
 import { SyllabusPdfLayout } from './syllabus-pdf-layout';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -44,27 +41,76 @@ type SyllabusData = {
     };
 };
 
-function SubjectEditor({ exam, subject, initialChapters, docId }: { exam: 'NEET' | 'JEE', subject: string, initialChapters: string[], docId: string }) {
+interface SubjectEditorProps {
+    exam: 'NEET' | 'JEE';
+    subjectKey: string;
+    subjectData: { id: string; chapters: string[] };
+    onSave: () => Promise<void>;
+}
+
+const SubjectEditorDialog: React.FC<SubjectEditorProps> = ({ exam, subjectKey, subjectData, onSave }) => {
+    const [chapters, setChapters] = useState<string[]>(subjectData.chapters);
+    const [newChapter, setNewChapter] = useState('');
+    const [editingIndex, setEditingIndex] = useState<number | null>(null);
+    const [editingText, setEditingText] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
     const firestore = useFirestore();
     const { toast } = useToast();
-    const [chapters, setChapters] = useState(initialChapters.join('\n'));
-    const [isSaving, setIsSaving] = useState(false);
 
-    const handleSave = async () => {
+    const subjectTitle = subjectKey.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    
+    const handleAddChapter = () => {
+        if (newChapter.trim()) {
+            setChapters([...chapters, newChapter.trim()]);
+            setNewChapter('');
+        }
+    };
+
+    const handleRemoveChapter = (index: number) => {
+        setChapters(chapters.filter((_, i) => i !== index));
+    };
+
+    const handleMoveChapter = (index: number, direction: 'up' | 'down') => {
+        if (direction === 'up' && index > 0) {
+            const newChapters = [...chapters];
+            [newChapters[index - 1], newChapters[index]] = [newChapters[index], newChapters[index - 1]];
+            setChapters(newChapters);
+        } else if (direction === 'down' && index < chapters.length - 1) {
+            const newChapters = [...chapters];
+            [newChapters[index + 1], newChapters[index]] = [newChapters[index], newChapters[index + 1]];
+            setChapters(newChapters);
+        }
+    };
+
+    const startEditing = (index: number) => {
+        setEditingIndex(index);
+        setEditingText(chapters[index]);
+    };
+
+    const finishEditing = (index: number) => {
+        if (editingText.trim()) {
+            const newChapters = [...chapters];
+            newChapters[index] = editingText.trim();
+            setChapters(newChapters);
+        }
+        setEditingIndex(null);
+        setEditingText('');
+    };
+
+    const handleSaveChanges = async () => {
         setIsSaving(true);
-        const chapterArray = chapters.split('\n').map(c => c.trim()).filter(c => c);
-        const syllabusRef = doc(firestore, 'syllabuses', docId);
-
+        const syllabusRef = doc(firestore, 'syllabuses', subjectData.id);
         try {
             await setDoc(syllabusRef, {
                 exam,
-                subject,
-                chapters: chapterArray,
+                subject: subjectKey,
+                chapters: chapters,
             });
             toast({
                 title: 'Syllabus Saved',
-                description: `Changes for ${subject} have been saved.`,
+                description: `Changes for ${subjectTitle} have been saved.`,
             });
+            onSave();
         } catch (error: any) {
             toast({
                 variant: 'destructive',
@@ -75,23 +121,66 @@ function SubjectEditor({ exam, subject, initialChapters, docId }: { exam: 'NEET'
             setIsSaving(false);
         }
     };
-
+    
     return (
-        <div className="space-y-4">
-            <Textarea
-                value={chapters}
-                onChange={(e) => setChapters(e.target.value)}
-                rows={15}
-                className="bg-background/50 font-mono text-sm"
-                placeholder="Enter one chapter per line..."
-            />
-            <Button onClick={handleSave} disabled={isSaving}>
-                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                Save Changes
-            </Button>
-        </div>
+        <DialogContent className="max-w-2xl h-[90vh] flex flex-col">
+            <DialogHeader>
+                <DialogTitle className="text-2xl">Editing: {subjectTitle}</DialogTitle>
+                <DialogDescription>
+                    Add, remove, edit, and reorder chapters for this subject.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="flex-grow my-4 -mx-6 px-6 overflow-y-hidden">
+                <ScrollArea className="h-full pr-4">
+                    <ul className="space-y-2">
+                        {chapters.map((chapter, index) => (
+                            <li key={`${chapter}-${index}`} className="group flex items-center gap-2 p-2 rounded-md bg-muted/50 hover:bg-muted transition-colors">
+                               {editingIndex === index ? (
+                                    <Input
+                                        value={editingText}
+                                        onChange={(e) => setEditingText(e.target.value)}
+                                        onBlur={() => finishEditing(index)}
+                                        onKeyDown={(e) => e.key === 'Enter' && finishEditing(index)}
+                                        autoFocus
+                                        className="flex-1 h-8"
+                                    />
+                               ) : (
+                                    <span className="flex-1 font-medium">{chapter}</span>
+                               )}
+
+                                <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => startEditing(index)}><Edit className="h-4 w-4"/></Button>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleMoveChapter(index, 'up')} disabled={index === 0}><ArrowUp className="h-4 w-4"/></Button>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleMoveChapter(index, 'down')} disabled={index === chapters.length - 1}><ArrowDown className="h-4 w-4"/></Button>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleRemoveChapter(index)}><Trash2 className="h-4 w-4"/></Button>
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                </ScrollArea>
+            </div>
+             <div className="flex items-center gap-2 mt-auto pt-4 border-t">
+                <Input
+                    placeholder="Add a new chapter..."
+                    value={newChapter}
+                    onChange={(e) => setNewChapter(e.target.value)}
+                    onKeyDown={(e) => {if(e.key === 'Enter') {e.preventDefault(); handleAddChapter()}}}
+                    className="h-9"
+                />
+                <Button onClick={handleAddChapter} size="icon" className="h-9 w-9 shrink-0"><Plus /></Button>
+            </div>
+            <DialogFooter className="pt-4">
+                <DialogClose asChild>
+                    <Button variant="outline" disabled={isSaving}>Cancel</Button>
+                </DialogClose>
+                <Button onClick={handleSaveChanges} disabled={isSaving}>
+                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                    Save Changes
+                </Button>
+            </DialogFooter>
+        </DialogContent>
     );
-}
+};
 
 
 export function SyllabusEditor() {
@@ -105,7 +194,7 @@ export function SyllabusEditor() {
     const pdfRef = useRef<HTMLDivElement>(null);
     const [pdfContent, setPdfContent] = useState<{exam: 'NEET' | 'JEE', syllabus: any} | null>(null);
 
-    const fetchSyllabuses = async () => {
+    const fetchSyllabuses = useCallback(async () => {
         setIsLoading(true);
         try {
             const querySnapshot = await getDocs(collection(firestore, 'syllabuses'));
@@ -136,12 +225,11 @@ export function SyllabusEditor() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [firestore, toast]);
 
     useEffect(() => {
         fetchSyllabuses();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [fetchSyllabuses]);
 
     useEffect(() => {
         if (pdfContent && pdfRef.current) {
@@ -167,7 +255,7 @@ export function SyllabusEditor() {
                     heightLeft -= pdfHeight;
                 }
                 pdf.save(`${pdfContent.exam}-Syllabus.pdf`);
-                setPdfContent(null); // Clean up
+                setPdfContent(null);
                 setIsDownloading(false);
             }).catch(e => {
                 console.error("Error generating PDF:", e);
@@ -225,33 +313,47 @@ export function SyllabusEditor() {
         }
     };
     
-    const renderSyllabus = (exam: 'NEET' | 'JEE') => {
-        const examSubjects = ALL_SUBJECTS[exam];
+    const renderSyllabusGrid = (exam: 'NEET' | 'JEE') => {
+        if (!syllabuses) return null;
+        const examSyllabus = ALL_SUBJECTS[exam];
+        const subjectKeys = Object.keys(examSyllabus);
 
         return (
-            <Accordion type="single" collapsible className="w-full">
-                {Object.keys(examSubjects).map(subjectKey => {
-                    const subjectData = syllabuses?.[exam]?.[subjectKey];
-                    const docId = subjectData?.id || `${exam.toLowerCase()}-${subjectKey}`;
-
-                    // Capitalize subjectKey for display
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {subjectKeys.map(subjectKey => {
+                    const subjectData = syllabuses?.[exam]?.[subjectKey] ?? { id: `${exam.toLowerCase()}-${subjectKey}`, chapters: [] };
                     const subjectTitle = subjectKey.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+                    const chapterCount = subjectData.chapters.length;
 
                     return (
-                        <AccordionItem value={subjectKey} key={subjectKey}>
-                            <AccordionTrigger className="text-lg font-medium">{subjectTitle}</AccordionTrigger>
-                            <AccordionContent>
-                                <SubjectEditor 
-                                    exam={exam}
-                                    subject={subjectKey}
-                                    initialChapters={subjectData?.chapters || []}
-                                    docId={docId}
-                                />
-                            </AccordionContent>
-                        </AccordionItem>
+                        <Dialog key={subjectKey}>
+                            <Card className="flex flex-col bg-card/50 backdrop-blur-sm transition-all hover:shadow-lg hover:border-primary/30">
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-3"><BookCopy className="text-primary"/> {subjectTitle}</CardTitle>
+                                    <CardDescription>{chapterCount} chapters</CardDescription>
+                                </CardHeader>
+                                <CardContent className="flex-grow">
+                                    <ScrollArea className="h-40">
+                                        <ul className="space-y-1 text-sm text-muted-foreground list-decimal list-inside">
+                                            {subjectData.chapters.slice(0, 5).map((chap, i) => <li key={i} className="truncate">{chap}</li>)}
+                                            {chapterCount > 5 && <li>...and {chapterCount - 5} more</li>}
+                                        </ul>
+                                    </ScrollArea>
+                                </CardContent>
+                                <CardFooter>
+                                    <DialogTrigger asChild>
+                                        <Button className="w-full">
+                                            <Edit className="mr-2 h-4 w-4"/>
+                                            Manage Chapters
+                                        </Button>
+                                    </DialogTrigger>
+                                </CardFooter>
+                            </Card>
+                            <SubjectEditorDialog exam={exam} subjectKey={subjectKey} subjectData={subjectData} onSave={fetchSyllabuses} />
+                        </Dialog>
                     );
                 })}
-            </Accordion>
+            </div>
         );
     };
 
@@ -290,8 +392,8 @@ export function SyllabusEditor() {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleSeedData}>
-                                    Yes, Overwrite and Seed
+                                <AlertDialogAction onClick={handleSeedData} disabled={isSeeding} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                    {isSeeding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Yes, Overwrite and Seed"}
                                 </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
@@ -304,23 +406,23 @@ export function SyllabusEditor() {
                     <TabsTrigger value="neet">NEET Syllabus</TabsTrigger>
                     <TabsTrigger value="jee">JEE Syllabus</TabsTrigger>
                 </TabsList>
-                <TabsContent value="neet" className="space-y-4">
-                    <div className="flex justify-end">
+                <TabsContent value="neet" className="mt-6">
+                    <div className="flex justify-end mb-4">
                         <Button onClick={() => handleDownload('NEET')} disabled={isDownloading || isLoading}>
                             {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                             Download PDF
                         </Button>
                     </div>
-                    {renderSyllabus('NEET')}
+                    {renderSyllabusGrid('NEET')}
                 </TabsContent>
-                <TabsContent value="jee" className="space-y-4">
-                    <div className="flex justify-end">
+                <TabsContent value="jee" className="mt-6">
+                     <div className="flex justify-end mb-4">
                         <Button onClick={() => handleDownload('JEE')} disabled={isDownloading || isLoading}>
                             {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                             Download PDF
                         </Button>
                     </div>
-                    {renderSyllabus('JEE')}
+                    {renderSyllabusGrid('JEE')}
                 </TabsContent>
             </Tabs>
         </div>
