@@ -26,15 +26,25 @@ interface LogActivityOptions {
 export async function logActivity({ firestore, actorId, actorName, action, targetId, targetName, details }: LogActivityOptions) {
     try {
         const activityLogsRef = collection(firestore, 'activityLogs');
-        await addDoc(activityLogsRef, {
+        
+        const logData: { [key: string]: any } = {
             timestamp: serverTimestamp(),
             actorId,
             actorName,
             action,
-            targetId,
-            targetName,
-            details
-        });
+        };
+
+        if (targetId !== undefined) {
+            logData.targetId = targetId;
+        }
+        if (targetName !== undefined) {
+            logData.targetName = targetName;
+        }
+        if (details !== undefined) {
+            logData.details = details;
+        }
+
+        await addDoc(activityLogsRef, logData);
     } catch (error) {
         console.error("Failed to log activity:", error);
         // We probably don't want to show a toast for a failed log, it's a background task.
