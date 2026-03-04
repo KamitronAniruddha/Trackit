@@ -1,6 +1,7 @@
+
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useFirestore } from '@/firebase/provider';
 import { collection, getDocs, doc, setDoc, writeBatch } from 'firebase/firestore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -13,8 +14,7 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Save, AlertTriangle, Download, BookCopy, Edit, Trash2, Plus, ArrowUp, ArrowDown } from 'lucide-react';
+import { Loader2, Save, AlertTriangle, Download, BookCopy, Edit, Trash2, Plus, GripVertical } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ALL_SUBJECTS } from '@/lib/neet-syllabus';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
@@ -24,6 +24,25 @@ import { ScrollArea } from './ui/scroll-area';
 import { SyllabusPdfLayout } from './syllabus-pdf-layout';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragOverlay,
+    type DragEndEvent,
+    type DragStartEvent,
+  } from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+    useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface SyllabusDoc {
     id: string;
@@ -55,32 +74,90 @@ const renumberChapters = (chapterList: string[]): string[] => {
   });
 };
 
+function SortableItem({ chapter, onEdit, onRemove, isEditing, onSaveEdit, onCancelEdit, editingText, setEditingText }: {
+    chapter: string;
+    index: number;
+    onEdit: () => void;
+    onRemove: () => void;
+    isEditing: boolean;
+    onSaveEdit: () => void;
+    onCancelEdit: () => void;
+    editingText: string;
+    setEditingText: (text: string) => void;
+}) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging
+    } = useSortable({ id: chapter });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 10 : 'auto',
+        opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+        <div ref={setNodeRef} style={style} className="group flex items-center gap-2 p-2 rounded-md bg-muted/50 transition-colors">
+            <Button variant="ghost" size="icon" className="h-8 w-8 cursor-grab" {...attributes} {...listeners}>
+                <GripVertical className="h-4 w-4 text-muted-foreground" />
+            </Button>
+            {isEditing ? (
+                <Input
+                    value={editingText}
+                    onChange={(e) => setEditingText(e.target.value)}
+                    onBlur={onCancelEdit}
+                    onKeyDown={(e) => { if (e.key === 'Enter') onSaveEdit(); if (e.key === 'Escape') onCancelEdit(); }}
+                    autoFocus
+                    className="flex-1 h-8"
+                />
+            ) : (
+                <span className="flex-1 font-medium">{chapter}</span>
+            )}
+            <div className="flex items-center ml-auto">
+                {!isEditing && <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onEdit}><Edit className="h-4 w-4"/></Button>}
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={onRemove}><Trash2 className="h-4 w-4"/></Button>
+            </div>
+        </div>
+    );
+}
+
+function Item({ chapter }: { chapter: string }) {
+    return (
+        <div className="flex items-center gap-2 p-2 rounded-md bg-card shadow-lg">
+            <Button variant="ghost" size="icon" className="h-8 w-8 cursor-grabbing">
+                <GripVertical className="h-4 w-4 text-muted-foreground" />
+            </Button>
+            <span className="flex-1 font-medium">{chapter}</span>
+        </div>
+    );
+}
+
+
 const SubjectEditorDialog: React.FC<SubjectEditorProps> = ({ exam, subjectKey, subjectData, onSave }) => {
     const [chapters, setChapters] = useState<string[]>(subjectData.chapters);
     const [newChapter, setNewChapter] = useState('');
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [editingText, setEditingText] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+    const [activeChapterId, setActiveChapterId] = useState<string | null>(null);
+
     const firestore = useFirestore();
     const { toast } = useToast();
-    const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+    
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
 
     const subjectTitle = subjectKey.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
     
-    const handleMoveChapter = useCallback((index: number, direction: 'up' | 'down') => {
-        setChapters(prevChapters => {
-            const newChapters = [...prevChapters];
-            if (direction === 'up' && index > 0) {
-                [newChapters[index - 1], newChapters[index]] = [newChapters[index], newChapters[index - 1]];
-                return renumberChapters(newChapters);
-            } else if (direction === 'down' && index < newChapters.length - 1) {
-                [newChapters[index + 1], newChapters[index]] = [newChapters[index], newChapters[index + 1]];
-                return renumberChapters(newChapters);
-            }
-            return prevChapters;
-        });
-    }, []);
-
     const handleAddChapter = () => {
         if (newChapter.trim()) {
             const newChapters = [...chapters, newChapter.trim()];
@@ -89,40 +166,9 @@ const SubjectEditorDialog: React.FC<SubjectEditorProps> = ({ exam, subjectKey, s
         }
     };
 
-    const handleRemoveChapter = (index: number) => {
-        const newChapters = chapters.filter((_, i) => i !== index);
+    const handleRemoveChapter = (indexToRemove: number) => {
+        const newChapters = chapters.filter((_, i) => i !== indexToRemove);
         setChapters(renumberChapters(newChapters));
-    };
-
-    const handleTouchStart = (e: React.TouchEvent) => {
-        touchStartPos.current = {
-            x: e.targetTouches[0].clientX,
-            y: e.targetTouches[0].clientY,
-        };
-    };
-
-    const handleTouchEnd = (e: React.TouchEvent, index: number) => {
-        if (!touchStartPos.current) return;
-    
-        const endX = e.changedTouches[0].clientX;
-        const endY = e.changedTouches[0].clientY;
-    
-        const diffX = Math.abs(touchStartPos.current.x - endX);
-        const diffY = touchStartPos.current.y - endY;
-        
-        const VERTICAL_SWIPE_THRESHOLD = 40; // pixels
-        const HORIZONTAL_SWIPE_LIMIT = 30;
-    
-        if (diffX < HORIZONTAL_SWIPE_LIMIT) { // It's a vertical swipe
-            e.preventDefault();
-            if (diffY > VERTICAL_SWIPE_THRESHOLD) { // Swiped up
-                handleMoveChapter(index, 'up');
-            } else if (diffY < -VERTICAL_SWIPE_THRESHOLD) { // Swiped down
-                handleMoveChapter(index, 'down');
-            }
-        }
-    
-        touchStartPos.current = null;
     };
 
     const startEditing = (index: number) => {
@@ -130,16 +176,16 @@ const SubjectEditorDialog: React.FC<SubjectEditorProps> = ({ exam, subjectKey, s
         setEditingText(chapters[index].replace(/^\d+\.\s*/, ''));
     };
 
-    const finishEditing = (index: number) => {
-        if (editingText.trim()) {
+    const finishEditing = () => {
+        if (editingIndex !== null && editingText.trim()) {
             const newChapters = [...chapters];
-            newChapters[index] = editingText.trim();
-            setChapters(renumberChapters(newChapters));
+            newChapters[editingIndex] = `${editingIndex + 1}. ${editingText.trim()}`;
+            setChapters(newChapters);
         }
         setEditingIndex(null);
         setEditingText('');
     };
-
+    
     const handleSaveChanges = async () => {
         setIsSaving(true);
         const syllabusRef = doc(firestore, 'syllabuses', subjectData.id);
@@ -164,48 +210,64 @@ const SubjectEditorDialog: React.FC<SubjectEditorProps> = ({ exam, subjectKey, s
             setIsSaving(false);
         }
     };
+
+    const handleDragStart = useCallback((event: DragStartEvent) => {
+        setActiveChapterId(event.active.id as string);
+    }, []);
+
+    const handleDragEnd = useCallback((event: DragEndEvent) => {
+        const { active, over } = event;
+        setActiveChapterId(null);
+        
+        if (over && active.id !== over.id) {
+            setChapters((items) => {
+                const oldIndex = items.findIndex(item => item === active.id);
+                const newIndex = items.findIndex(item => item === over.id);
+                const reordered = arrayMove(items, oldIndex, newIndex);
+                return renumberChapters(reordered);
+            });
+        }
+    }, []);
     
     return (
         <DialogContent className="max-w-2xl h-[90vh] flex flex-col">
             <DialogHeader>
                 <DialogTitle className="text-2xl">Editing: {subjectTitle}</DialogTitle>
                 <DialogDescription>
-                    Add, remove, edit, and reorder chapters for this subject.
+                    Add, remove, or drag and drop to reorder chapters.
                 </DialogDescription>
             </DialogHeader>
             <div className="flex-grow my-4 -mx-6 px-6 overflow-y-hidden">
-                <ScrollArea className="h-full pr-4">
-                    <ul className="space-y-2">
-                        {chapters.map((chapter, index) => (
-                            <li 
-                                key={`${chapter}-${index}`} 
-                                className="group flex items-center gap-2 p-2 rounded-md bg-muted/50 hover:bg-muted transition-colors"
-                                onTouchStart={handleTouchStart}
-                                onTouchEnd={(e) => handleTouchEnd(e, index)}
-                            >
-                               {editingIndex === index ? (
-                                    <Input
-                                        value={editingText}
-                                        onChange={(e) => setEditingText(e.target.value)}
-                                        onBlur={() => finishEditing(index)}
-                                        onKeyDown={(e) => e.key === 'Enter' && finishEditing(index)}
-                                        autoFocus
-                                        className="flex-1 h-8"
+                <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                >
+                    <SortableContext items={chapters} strategy={verticalListSortingStrategy}>
+                        <ScrollArea className="h-full pr-4">
+                            <ul className="space-y-2">
+                                {chapters.map((chapter, index) => (
+                                    <SortableItem
+                                        key={chapter}
+                                        index={index}
+                                        chapter={chapter}
+                                        onEdit={() => startEditing(index)}
+                                        onRemove={() => handleRemoveChapter(index)}
+                                        isEditing={editingIndex === index}
+                                        onSaveEdit={finishEditing}
+                                        onCancelEdit={() => setEditingIndex(null)}
+                                        editingText={editingText}
+                                        setEditingText={setEditingText}
                                     />
-                               ) : (
-                                    <span className="flex-1 font-medium">{chapter}</span>
-                               )}
-
-                                <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => startEditing(index)}><Edit className="h-4 w-4"/></Button>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleMoveChapter(index, 'up')} disabled={index === 0}><ArrowUp className="h-4 w-4"/></Button>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleMoveChapter(index, 'down')} disabled={index === chapters.length - 1}><ArrowDown className="h-4 w-4"/></Button>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleRemoveChapter(index)}><Trash2 className="h-4 w-4"/></Button>
-                                </div>
-                            </li>
-                        ))}
-                    </ul>
-                </ScrollArea>
+                                ))}
+                            </ul>
+                        </ScrollArea>
+                    </SortableContext>
+                    <DragOverlay>
+                        {activeChapterId ? <Item chapter={activeChapterId} /> : null}
+                    </DragOverlay>
+                </DndContext>
             </div>
              <div className="flex items-center gap-2 mt-auto pt-4 border-t">
                 <Input
@@ -239,7 +301,7 @@ export function SyllabusEditor() {
     const [isSeeding, setIsSeeding] = useState(false);
 
     const [isDownloading, setIsDownloading] = useState(false);
-    const pdfRef = useRef<HTMLDivElement>(null);
+    const pdfRef = React.useRef<HTMLDivElement>(null);
     const [pdfContent, setPdfContent] = useState<{exam: 'NEET' | 'JEE', syllabus: any} | null>(null);
 
     const fetchSyllabuses = useCallback(async () => {
