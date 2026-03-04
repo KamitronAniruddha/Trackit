@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -75,6 +74,26 @@ import { cn } from '@/lib/utils';
 import { useSpectate } from '@/contexts/spectate-context';
 import { useToast } from '@/hooks/use-toast';
 import { RealtimeToastNotifier } from './RealtimeToastNotifier';
+
+const routeTitles: { [key: string]: string } = {
+    '/dashboard': 'Dashboard',
+    '/dashboard/physics': 'Physics Syllabus',
+    '/dashboard/biology': 'Biology Syllabus',
+    '/dashboard/chemistry': 'Chemistry Syllabus',
+    '/dashboard/mathematics': 'Mathematics Syllabus',
+    '/dashboard/goals': 'Daily Goals',
+    '/dashboard/pomodoro': 'Pomodoro Timer',
+    '/dashboard/revisions': 'Revision Hub',
+    '/dashboard/mistakes': 'Mistake Notebook',
+    '/dashboard/messages': 'Messages',
+    '/dashboard/agram': 'A-gram',
+    '/dashboard/discover': 'Discover Users',
+    '/dashboard/interpretation': 'Performance Analytics',
+    '/dashboard/music': 'Focus Music',
+    '/dashboard/profile': 'My Profile',
+    '/dashboard/wall': 'Brain Dump Wall',
+};
+
 
 const SpectatingAdminBanner = () => {
   const { isSpectating, spectatingUser, stopSpectating } = useSpectate();
@@ -170,6 +189,26 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     router.push('/login');
   };
 
+  const getPageTitle = () => {
+    if (routeTitles[pathname]) {
+        return routeTitles[pathname];
+    }
+    if (pathname.startsWith('/dashboard/messages/group/')) {
+        return 'Group Chat';
+    }
+    if (pathname.startsWith('/dashboard/messages/direct/')) {
+        return 'Direct Message';
+    }
+    const pathSegments = pathname.split('/');
+    if (pathSegments.length === 3 && pathSegments[1] === 'dashboard') {
+        const subject = pathSegments[2];
+        const subjectName = subject.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+        return `${subjectName} Syllabus`;
+    }
+    return 'Dashboard';
+  }
+
+  const pageTitle = getPageTitle();
   const exam = profile?.exam;
   const isPremium = profile?.isPremium;
 
@@ -313,6 +352,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                     <ArrowLeft className="h-4 w-4" />
                 </Button>
             )}
+             <h1 className="text-xl font-semibold tracking-tight">{pageTitle}</h1>
           </div>
           <div className="flex items-center gap-2">
             <DropdownMenu>

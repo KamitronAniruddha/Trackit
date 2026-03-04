@@ -14,12 +14,9 @@ export default function BrainDumpPage() {
 
     return (
         <div className="flex flex-col gap-6">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">Live Brain Dump Wall</h1>
-                <p className="text-muted-foreground">
-                    An anonymous, real-time space to share what's on your mind. Notes disappear after 24 hours.
-                </p>
-            </div>
+            <p className="text-muted-foreground -mt-4">
+                An anonymous, real-time space to share what's on your mind. Notes disappear after 24 hours.
+            </p>
             <BrainDumpWall />
         </div>
     );

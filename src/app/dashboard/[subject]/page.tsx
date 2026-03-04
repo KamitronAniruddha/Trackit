@@ -31,20 +31,11 @@ export default function SubjectPage() {
     notFound();
   }
 
-  const subjectTitle = subject
-    .split('-')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Syllabus Tracker - {subjectTitle}</h1>
-        <p className="text-muted-foreground">
-          Update your progress to get accurate AI recommendations.
-        </p>
-      </div>
-
+      <p className="text-muted-foreground -mt-4">
+        Update your progress to get accurate AI recommendations.
+      </p>
       <Tabs defaultValue="chapters" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="chapters">Chapters</TabsTrigger>

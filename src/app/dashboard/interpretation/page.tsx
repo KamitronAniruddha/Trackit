@@ -13,12 +13,9 @@ export default function InterpretationPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Performance Analytics</h1>
-        <p className="text-muted-foreground">
-          Dive deep into your study patterns with advanced data visualization.
-        </p>
-      </div>
+      <p className="text-muted-foreground -mt-4">
+        Dive deep into your study patterns with advanced data visualization.
+      </p>
       <InterpretationCharts />
     </div>
   );

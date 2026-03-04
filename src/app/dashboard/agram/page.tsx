@@ -20,13 +20,10 @@ export default function AgramPage() {
     return (
         <>
             <div className="flex flex-col gap-6">
-                <div className="flex justify-between items-center">
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight">A-gram</h1>
-                        <p className="text-muted-foreground">
-                            Share your moments and connect with the community.
-                        </p>
-                    </div>
+                <div className="flex justify-between items-center -mt-4">
+                    <p className="text-muted-foreground">
+                        Share your moments and connect with the community.
+                    </p>
                     <div className="flex items-center gap-2">
                         <FollowRequestsPopover />
                         <Button onClick={() => setIsCreateOpen(true)}>

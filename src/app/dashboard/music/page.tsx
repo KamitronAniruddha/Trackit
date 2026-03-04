@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -6,12 +7,9 @@ import { Music } from "lucide-react";
 export default function MusicPage() {
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Focus Music</h1>
-        <p className="text-muted-foreground">
-          Curated playlists from Spotify to help you concentrate.
-        </p>
-      </div>
+      <p className="text-muted-foreground -mt-4">
+        Curated playlists from Spotify to help you concentrate.
+      </p>
 
       <div className="rounded-lg overflow-hidden aspect-video w-full">
         <iframe

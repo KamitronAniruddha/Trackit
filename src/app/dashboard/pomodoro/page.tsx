@@ -13,12 +13,9 @@ export default function PomodoroPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Pomodoro Timer</h1>
-        <p className="text-muted-foreground">
-          Focus on your studies with the Pomodoro technique.
-        </p>
-      </div>
+      <p className="text-muted-foreground -mt-4">
+        Focus on your studies with the Pomodoro technique.
+      </p>
       <PomodoroTimer />
     </div>
   );

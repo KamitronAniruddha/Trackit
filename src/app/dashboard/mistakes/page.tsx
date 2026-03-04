@@ -1,3 +1,4 @@
+
 'use client';
 
 import { PremiumFeatureLock } from "@/components/premium-lock";
@@ -13,12 +14,9 @@ export default function MistakesPage() {
 
     return (
         <div className="flex flex-col gap-6">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">Mistake Notebook</h1>
-                <p className="text-muted-foreground">
-                    A digital log of your mistakes to help you learn and improve.
-                </p>
-            </div>
+            <p className="text-muted-foreground -mt-4">
+                A digital log of your mistakes to help you learn and improve.
+            </p>
             <MistakeNotebook />
         </div>
     );

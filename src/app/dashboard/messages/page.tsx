@@ -15,10 +15,7 @@ export default function MessagesPage() {
     
     return (
         <div className="flex flex-col gap-6">
-             <div>
-                <h1 className="text-3xl font-bold tracking-tight">Messages</h1>
-                <p className="text-muted-foreground">Your conversations.</p>
-            </div>
+             <p className="text-muted-foreground -mt-4">Your conversations.</p>
             <Tabs defaultValue="groups" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="groups">Groups</TabsTrigger>
