@@ -92,7 +92,7 @@ export function ChapterEditor({ subject, chapter }: ChapterEditorProps) {
 
       <CardContent className="space-y-4 pt-0 pb-4">
         <div className="space-y-2">
-          <div className="flex justify-between items-center text-xs">
+          <div className={cn("flex justify-between items-center text-xs transition-opacity", !isCompleted && "opacity-50")}>
               <Label htmlFor={`confidence-${chapter}`} className="font-medium text-muted-foreground">Confidence</Label>
               <span className={cn("font-mono w-10 text-right font-semibold", confidenceTextColor)}>{localConfidence}%</span>
           </div>
@@ -106,7 +106,7 @@ export function ChapterEditor({ subject, chapter }: ChapterEditorProps) {
                 onValueChange={(value) => setLocalConfidence(value[0])}
                 onPointerDownCapture={(e) => e.stopPropagation()}
                 aria-label={`Confidence for ${chapter}`}
-                disabled={isCompleted}
+                disabled={!isCompleted}
             />
           </div>
         </div>
