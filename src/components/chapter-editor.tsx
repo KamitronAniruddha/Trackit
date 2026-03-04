@@ -104,6 +104,7 @@ export function ChapterEditor({ subject, chapter }: ChapterEditorProps) {
                 step={1}
                 value={[localConfidence]}
                 onValueChange={(value) => setLocalConfidence(value[0])}
+                onPointerDownCapture={(e) => e.stopPropagation()}
                 aria-label={`Confidence for ${chapter}`}
                 disabled={isCompleted}
             />
