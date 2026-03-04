@@ -154,6 +154,10 @@ const SubjectEditorDialog: React.FC<SubjectEditorProps> = ({ exam, subjectKey, s
             coordinateGetter: sortableKeyboardCoordinates,
         })
     );
+    
+    useEffect(() => {
+        setChapters(subjectData.chapters);
+    }, [subjectData.chapters]);
 
     const subjectTitle = subjectKey.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
     
@@ -214,19 +218,20 @@ const SubjectEditorDialog: React.FC<SubjectEditorProps> = ({ exam, subjectKey, s
         setActiveChapterId(event.active.id as string);
     }, []);
 
-    const handleDragEnd = (event: DragEndEvent) => {
+    const handleDragEnd = useCallback((event: DragEndEvent) => {
         const { active, over } = event;
         setActiveChapterId(null);
-        
+    
         if (over && active.id !== over.id) {
-            setChapters((items) => {
-                const oldIndex = items.findIndex(item => item === active.id);
-                const newIndex = items.findIndex(item => item === over.id);
-                const reordered = arrayMove(items, oldIndex, newIndex);
-                return renumberChapters(reordered);
-            });
+          const oldIndex = chapters.findIndex((item) => item === active.id);
+          const newIndex = chapters.findIndex((item) => item === over.id);
+          
+          if (oldIndex > -1 && newIndex > -1) {
+            const reorderedChapters = arrayMove(chapters, oldIndex, newIndex);
+            setChapters(renumberChapters(reorderedChapters));
+          }
         }
-    };
+      }, [chapters]);
     
     return (
         <DialogContent className="max-w-2xl h-[90vh] flex flex-col">
