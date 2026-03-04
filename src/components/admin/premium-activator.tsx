@@ -15,14 +15,21 @@ import { useFirestore } from '@/firebase/provider';
 import { collection, query, where, getDocs, writeBatch } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, CheckCircle } from 'lucide-react';
+import { useUserProfile } from '@/contexts/user-profile-context';
+import { logActivity } from '@/lib/activity-logger';
 
 export function PremiumActivator() {
   const [accessCode, setAccessCode] = useState('');
   const [isActivating, setIsActivating] = useState(false);
   const firestore = useFirestore();
   const { toast } = useToast();
+  const { profile: adminProfile } = useUserProfile();
 
   const handleActivate = async () => {
+    if (!adminProfile) {
+      toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in as an admin.' });
+      return;
+    }
     if (accessCode.length !== 6) {
       toast({
         variant: 'destructive',
@@ -50,9 +57,11 @@ export function PremiumActivator() {
       
       const batch = writeBatch(firestore);
       let activatedUserName = '';
+      let activatedUserId = '';
 
       querySnapshot.forEach(doc => {
         activatedUserName = doc.data().displayName;
+        activatedUserId = doc.id;
         const userRef = doc.ref;
         batch.update(userRef, {
           isPremium: true,
@@ -66,6 +75,16 @@ export function PremiumActivator() {
         title: 'Activation Successful!',
         description: `${activatedUserName} has been granted premium access.`,
       });
+
+      logActivity({
+        firestore,
+        actorId: adminProfile.uid,
+        actorName: adminProfile.displayName,
+        action: 'PREMIUM_ACTIVATED_WITH_CODE',
+        targetId: activatedUserId,
+        targetName: activatedUserName,
+      });
+
       setAccessCode('');
 
     } catch (error: any) {

@@ -79,7 +79,7 @@ service cloud.firestore {
         // Case B: Owner updating their own profile
         (isOwner(userId) && resource.data.get('isDeleted', false) == false && (
           // Sub-case B1: Normal profile update (any field EXCEPT protected ones)
-          (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'isBanned', 'isDeleted', 'banExpiresAt', 'accessCode', 'isPremium', 'accountStatus', 'spectatePermission'])) ||
+          (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'isBanned', 'isDeleted', 'banExpiresAt', 'accessCode', 'isPremium', 'accountStatus', 'spectatePermission', 'createdAt'])) ||
           
           // Sub-case B2: User granting/revoking spectate permission
           (
@@ -287,6 +287,12 @@ service cloud.firestore {
       allow get: if isSignedIn();
       // Any signed-in user can "consume" a code by deleting it as part of a transaction.
       allow delete: if isSignedIn();
+    }
+
+    match /activityLogs/{logId} {
+      allow list, get: if hasAdminPrivileges();
+      allow create: if hasAdminPrivileges() && isOwner(request.resource.data.actorId);
+      allow update, delete: if false;
     }
   }
 }

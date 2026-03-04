@@ -39,6 +39,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useSpectate } from '@/contexts/spectate-context';
 import { Checkbox } from '@/components/ui/checkbox';
+import { logActivity } from '@/lib/activity-logger';
 
 type UserWithId = UserProfile & { id: string };
 
@@ -88,7 +89,7 @@ export function UserList() {
     }, [firestore]);
     
     const handleBanUser = async () => {
-        if (!banUser) return;
+        if (!banUser || !adminProfile) return;
         setIsBanning(true);
     
         const expires = new Date();
@@ -102,6 +103,7 @@ export function UserList() {
                 banExpiresAt: banExpiresAt,
             });
             toast({ title: 'User Banned', description: `${banUser.displayName} has been banned for ${banDuration} hours.` });
+            logActivity({ firestore, actorId: adminProfile.uid, actorName: adminProfile.displayName, action: 'USER_BANNED', targetId: banUser.id, targetName: banUser.displayName });
         } catch (e: any) {
             toast({ variant: 'destructive', title: 'Error', description: `Failed to ban user: ${e.message}` });
         } finally {
@@ -111,6 +113,7 @@ export function UserList() {
     };
 
     const handleUnbanUser = async (userToUnban: UserWithId) => {
+        if (!adminProfile) return;
         const userRef = doc(firestore, 'users', userToUnban.id);
         try {
             await updateDoc(userRef, {
@@ -118,12 +121,14 @@ export function UserList() {
                 banExpiresAt: null,
             });
             toast({ title: 'User Unbanned', description: `${userToUnban.displayName} has been unbanned.` });
+            logActivity({ firestore, actorId: adminProfile.uid, actorName: adminProfile.displayName, action: 'USER_UNBANNED', targetId: userToUnban.id, targetName: userToUnban.displayName });
         } catch (e: any) {
             toast({ variant: 'destructive', title: 'Error', description: `Failed to unban user: ${e.message}` });
         }
     };
 
     const handleGrantPremium = async (userToUpgrade: UserWithId) => {
+        if (!adminProfile) return;
         const userRef = doc(firestore, 'users', userToUpgrade.id);
         try {
             await updateDoc(userRef, {
@@ -131,12 +136,14 @@ export function UserList() {
                 accountStatus: 'active',
             });
             toast({ title: 'User Upgraded', description: `${userToUpgrade.displayName} has been granted premium access.` });
+            logActivity({ firestore, actorId: adminProfile.uid, actorName: adminProfile.displayName, action: 'PREMIUM_GRANTED', targetId: userToUpgrade.id, targetName: userToUpgrade.displayName });
         } catch (e: any) {
             toast({ variant: 'destructive', title: 'Error', description: `Failed to upgrade user: ${e.message}` });
         }
     };
 
     const handleRevokePremium = async (userToDowngrade: UserWithId) => {
+        if (!adminProfile) return;
         const userRef = doc(firestore, 'users', userToDowngrade.id);
         try {
             await updateDoc(userRef, {
@@ -144,13 +151,14 @@ export function UserList() {
                 accountStatus: 'demo',
             });
             toast({ title: 'Premium Revoked', description: `${userToDowngrade.displayName}'s premium access has been revoked.` });
+             logActivity({ firestore, actorId: adminProfile.uid, actorName: adminProfile.displayName, action: 'PREMIUM_REVOKED', targetId: userToDowngrade.id, targetName: userToDowngrade.displayName });
         } catch (e: any) {
             toast({ variant: 'destructive', title: 'Error', description: `Failed to revoke premium: ${e.message}` });
         }
     };
 
     const handleSingleDeleteUser = async () => {
-        if (!userToDelete) return;
+        if (!userToDelete || !adminProfile) return;
         setIsDeleting(true);
     
         const userRef = doc(firestore, 'users', userToDelete.id);
@@ -159,6 +167,7 @@ export function UserList() {
             isDeleted: true,
           });
           toast({ title: 'User Deleted', description: `${userToDelete.displayName} has been soft-deleted and will be hidden from users.` });
+          logActivity({ firestore, actorId: adminProfile.uid, actorName: adminProfile.displayName, action: 'USER_DELETED', targetId: userToDelete.id, targetName: userToDelete.displayName });
         } catch (e: any) {
           toast({ variant: 'destructive', title: 'Error', description: `Failed to delete user: ${e.message}` });
         } finally {
@@ -168,13 +177,17 @@ export function UserList() {
     };
 
     const handleBulkDelete = async () => {
-        if (selectedUsers.length === 0) return;
+        if (selectedUsers.length === 0 || !adminProfile) return;
         setIsDeleting(true);
 
         const batch = writeBatch(firestore);
         selectedUsers.forEach(userId => {
             const userRef = doc(firestore, 'users', userId);
             batch.update(userRef, { isDeleted: true });
+            const user = users.find(u => u.id === userId);
+            if (user) {
+                logActivity({ firestore, actorId: adminProfile.uid, actorName: adminProfile.displayName, action: 'USER_DELETED', targetId: user.id, targetName: user.displayName });
+            }
         });
 
         try {
@@ -197,12 +210,13 @@ export function UserList() {
     };
 
     const handleRoleChange = async (userToUpdate: UserWithId, newRole: string) => {
-        if (newRole === userToUpdate.role) return;
+        if (newRole === userToUpdate.role || !adminProfile) return;
     
         const userRef = doc(firestore, 'users', userToUpdate.id);
         try {
             await updateDoc(userRef, { role: newRole });
             toast({ title: 'Role Updated', description: `${userToUpdate.displayName}'s role has been changed to ${newRole}.` });
+            logActivity({ firestore, actorId: adminProfile.uid, actorName: adminProfile.displayName, action: 'ROLE_CHANGED', targetId: userToUpdate.id, targetName: userToUpdate.displayName, details: { oldRole: userToUpdate.role, newRole } });
         } catch (e: any) {
             toast({ variant: 'destructive', title: 'Error', description: `Failed to update role: ${e.message}` });
         }

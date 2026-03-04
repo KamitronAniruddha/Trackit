@@ -41,6 +41,7 @@ export interface UserProfile {
     grantedAt?: Timestamp;
     spectatingAdminId?: string | null;
   };
+  createdAt?: Timestamp;
 }
 
 interface UserProfileContextType {
@@ -143,6 +144,7 @@ export function UserProfileProvider({ children }: { children: React.ReactNode })
           loginCode: data.loginCode,
           authMethod: data.authMethod || 'password',
           spectatePermission: data.spectatePermission,
+          createdAt: data.createdAt,
         });
       } else {
         setProfile(null);

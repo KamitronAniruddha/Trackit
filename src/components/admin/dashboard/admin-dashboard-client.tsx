@@ -1,23 +1,25 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
 import { useFirestore } from '@/firebase/provider';
-import { collection, onSnapshot, query, where, Timestamp, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, Timestamp, orderBy, getCountFromServer } from 'firebase/firestore';
 import type { UserProfile } from '@/contexts/user-profile-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { Bar, BarChart, CartesianGrid, XAxis, Pie, PieChart as RechartsPieChart, Cell } from 'recharts';
-import { Loader2, Users, ShieldQuestion, Gem, Mail, UserPlus, ArrowRight } from 'lucide-react';
+import { Bar, BarChart, CartesianGrid, XAxis, Pie, PieChart as RechartsPieChart, Cell, LineChart, Line } from 'recharts';
+import { Loader2, Users, ShieldQuestion, Gem, Mail, UserPlus, ArrowRight, Activity, FileWarning, MessageSquare } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { format, subDays } from 'date-fns';
+import { format, subDays, startOfDay } from 'date-fns';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ActivityLog, ActivityLogFeed } from './activity-log-feed';
 
 // --- STAT CARD ---
 const StatCard = ({ title, value, icon: Icon, description, colorClass, isLoading }: { title: string, value: string | number, icon: React.ElementType, description: string, colorClass: string, isLoading: boolean }) => (
-    <Card className="relative overflow-hidden bg-card/80 backdrop-blur-sm animate-[fade-in-up_0.5s_ease-out]">
-        <div className={`absolute -top-4 -right-4 h-20 w-20 rounded-full ${colorClass} opacity-10 blur-xl`}></div>
+    <Card className="relative overflow-hidden bg-card/80 backdrop-blur-sm animate-[fade-in-up_0.5s_ease-out] hover:shadow-lg transition-shadow duration-300">
+        <div className={`absolute -top-4 -right-4 h-20 w-20 rounded-full ${colorClass} opacity-10 blur-xl animate-[spin_20s_linear_infinite] group-hover:opacity-20`}></div>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{title}</CardTitle>
             <Icon className={`h-5 w-5 text-muted-foreground ${colorClass}`} />
@@ -41,23 +43,49 @@ export function AdminDashboardClient() {
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [unbanRequests, setUnbanRequests] = useState(0);
     const [contactMessages, setContactMessages] = useState(0);
+    const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+    const [otherStats, setOtherStats] = useState({ posts: 0, groups: 0, mistakes: 0 });
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const usersQuery = query(collection(firestore, 'users'), where('isDeleted', '!=', true));
         const unbanQuery = query(collection(firestore, 'unbanRequests'), where('status', '==', 'pending'));
         const contactQuery = query(collection(firestore, 'contactSubmissions'), where('isRead', '==', false));
+        const activityQuery = query(collection(firestore, 'activityLogs'), orderBy('timestamp', 'desc'));
 
         const unsubUsers = onSnapshot(usersQuery, snap => setUsers(snap.docs.map(d => ({ uid: d.id, ...d.data() } as UserProfile))), () => setLoading(false));
         const unsubUnban = onSnapshot(unbanQuery, snap => setUnbanRequests(snap.size));
         const unsubContact = onSnapshot(contactQuery, snap => setContactMessages(snap.size));
+        const unsubActivity = onSnapshot(activityQuery, snap => setActivityLogs(snap.docs.map(d => ({ id: d.id, ...d.data() } as ActivityLog))));
 
+        const fetchCounts = async () => {
+            try {
+                const [postsSnap, groupsSnap, mistakesSnap] = await Promise.all([
+                    getCountFromServer(collection(firestore, 'posts')),
+                    getCountFromServer(collection(firestore, 'groups')),
+                    // Mistakes are a subcollection, this is more complex. For this demo, let's assume it's a top-level collection.
+                    // A real implementation would need to iterate users or use a different data model.
+                    // This count will likely be 0 unless the data model is changed.
+                    getCountFromServer(collection(firestore, 'mistakes'))
+                ]);
+                setOtherStats({
+                    posts: postsSnap.data().count,
+                    groups: groupsSnap.data().count,
+                    mistakes: 0 // Placeholder as it is a sub-collection
+                });
+            } catch (e) {
+                console.error("Could not fetch counts", e);
+            }
+        };
+
+        fetchCounts();
         const timer = setTimeout(() => setLoading(false), 2000); // Failsafe loader
 
         return () => {
             unsubUsers();
             unsubUnban();
             unsubContact();
+            unsubActivity();
             clearTimeout(timer);
         };
     }, [firestore]);
@@ -67,8 +95,8 @@ export function AdminDashboardClient() {
         const last7Days = Array.from({ length: 7 }, (_, i) => subDays(today, i)).reverse();
         
         const signupsByDay = last7Days.map(day => {
-            const dayString = format(day, 'yyyy-MM-dd');
-            const count = users.filter(u => u.createdAt && format((u.createdAt as any).toDate(), 'yyyy-MM-dd') === dayString).length;
+            const dayStart = startOfDay(day);
+            const count = users.filter(u => u.createdAt && (u.createdAt as Timestamp).toDate() >= dayStart && (u.createdAt as Timestamp).toDate() < startOfDay(subDays(day, -1))).length;
             return { date: format(day, 'MMM d'), users: count };
         });
 
@@ -85,7 +113,7 @@ export function AdminDashboardClient() {
         }));
         
         const premiumUsers = users.filter(u => u.isPremium).length;
-        const recentUsers = [...users].sort((a, b) => ((b.createdAt as any)?.toDate() || 0) - ((a.createdAt as any)?.toDate() || 0)).slice(0, 5);
+        const recentUsers = [...users].sort((a, b) => ((b.createdAt as Timestamp)?.toDate()?.getTime() || 0) - ((a.createdAt as Timestamp)?.toDate()?.getTime() || 0)).slice(0, 5);
 
 
         return {
@@ -96,56 +124,72 @@ export function AdminDashboardClient() {
             recentUsers
         };
     }, [users]);
+    
+    const isLoadingStats = loading || users.length === 0;
 
     return (
         <div className="space-y-8">
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                <StatCard title="Total Users" value={stats.totalUsers} icon={Users} description="All registered users" colorClass="text-primary" isLoading={loading} />
-                <StatCard title="Premium Users" value={stats.premiumUsers} icon={Gem} description={`${stats.totalUsers > 0 ? ((stats.premiumUsers / stats.totalUsers) * 100).toFixed(0) : 0}% of users`} colorClass="text-green-500" isLoading={loading} />
-                <StatCard title="Unban Requests" value={unbanRequests} icon={ShieldQuestion} description="Pending user unban requests" colorClass="text-yellow-500" isLoading={loading} />
-                <StatCard title="Unread Messages" value={contactMessages} icon={Mail} description="Unread contact form submissions" colorClass="text-blue-500" isLoading={loading} />
+            <h1 className="text-3xl font-bold tracking-tight">Command Center</h1>
+             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <StatCard title="Total Users" value={stats.totalUsers} icon={Users} description="All non-deleted users" colorClass="text-primary" isLoading={isLoadingStats} />
+                <StatCard title="Premium Users" value={stats.premiumUsers} icon={Gem} description={`${stats.totalUsers > 0 ? ((stats.premiumUsers / stats.totalUsers) * 100).toFixed(0) : 0}% of users`} colorClass="text-green-500" isLoading={isLoadingStats} />
+                <StatCard title="A-gram Posts" value={otherStats.posts.toLocaleString()} icon={Mail} description="Total posts created" colorClass="text-blue-500" isLoading={loading} />
+                <StatCard title="Groups" value={otherStats.groups.toLocaleString()} icon={MessageSquare} description="Total groups formed" colorClass="text-indigo-500" isLoading={loading} />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <Card className="lg:col-span-2 bg-card/80 backdrop-blur-sm animate-[fade-in-up_0.6s_ease-out]">
-                    <CardHeader>
-                        <CardTitle>New Users (Last 7 Days)</CardTitle>
-                        <CardDescription>Daily user signups.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {loading ? <Skeleton className="h-[250px] w-full" /> : (
-                            <ChartContainer config={chartConfig} className="h-[250px] w-full">
-                                <BarChart data={stats.signupsByDay} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
-                                    <CartesianGrid vertical={false} />
-                                    <XAxis dataKey="date" tickLine={false} axisLine={false} stroke="#888888" fontSize={12} />
-                                    <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
-                                    <Bar dataKey="users" fill="var(--color-users)" radius={4} />
-                                </BarChart>
-                            </ChartContainer>
-                        )}
-                    </CardContent>
-                </Card>
-                <Card className="bg-card/80 backdrop-blur-sm animate-[fade-in-up_0.7s_ease-out]">
-                    <CardHeader>
-                        <CardTitle>User Roles</CardTitle>
-                        <CardDescription>Distribution of user roles.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {loading ? <Skeleton className="h-[250px] w-full" /> : (
-                             <ChartContainer config={chartConfig} className="h-[250px] w-full">
-                                <RechartsPieChart>
-                                    <ChartTooltip content={<ChartTooltipContent nameKey="count" hideLabel />} />
-                                    <Pie data={stats.roleData} dataKey="count" nameKey="role" innerRadius={60} strokeWidth={5}>
-                                        {stats.roleData.map((entry) => (
-                                          <Cell key={entry.role} fill={entry.fill} />
-                                        ))}
-                                    </Pie>
-                                </RechartsPieChart>
-                            </ChartContainer>
-                        )}
-                    </CardContent>
-                </Card>
+                <div className="lg:col-span-2 space-y-6">
+                    <Card className="bg-card/80 backdrop-blur-sm animate-[fade-in-up_0.6s_ease-out]">
+                        <CardHeader>
+                            <CardTitle>New Users (Last 7 Days)</CardTitle>
+                            <CardDescription>Daily user signups.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {loading ? <Skeleton className="h-[250px] w-full" /> : (
+                                <ChartContainer config={chartConfig} className="h-[250px] w-full">
+                                    <LineChart data={stats.signupsByDay} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                                        <CartesianGrid vertical={false} />
+                                        <XAxis dataKey="date" tickLine={false} axisLine={false} stroke="#888888" fontSize={12} />
+                                        <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
+                                        <Line dataKey="users" type="monotone" stroke="var(--color-users)" strokeWidth={2} dot={{r: 4, fill: "var(--color-users)"}} activeDot={{r: 6}} />
+                                    </LineChart>
+                                </ChartContainer>
+                            )}
+                        </CardContent>
+                    </Card>
+                     <Card className="bg-card/80 backdrop-blur-sm animate-[fade-in-up_0.7s_ease-out]">
+                        <CardHeader>
+                            <CardTitle>User Roles</CardTitle>
+                            <CardDescription>Distribution of user roles.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {loading ? <Skeleton className="h-[250px] w-full" /> : (
+                                <ChartContainer config={chartConfig} className="h-[250px] w-full">
+                                    <RechartsPieChart>
+                                        <ChartTooltip content={<ChartTooltipContent nameKey="count" hideLabel />} />
+                                        <Pie data={stats.roleData} dataKey="count" nameKey="role" innerRadius={60} strokeWidth={5}>
+                                            {stats.roleData.map((entry) => (
+                                            <Cell key={entry.role} fill={entry.fill} />
+                                            ))}
+                                        </Pie>
+                                    </RechartsPieChart>
+                                </ChartContainer>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
+                <div className="lg:col-span-1 space-y-6">
+                    <Card className="bg-card/80 backdrop-blur-sm animate-[fade-in-up_0.8s_ease-out] h-full flex flex-col">
+                        <CardHeader>
+                             <CardTitle className="flex items-center gap-2"><Activity /> Live Activity</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex-1 overflow-hidden">
+                           <ActivityLogFeed logs={activityLogs} isLoading={loading} />
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
+
              <Card className="bg-card/80 backdrop-blur-sm animate-[fade-in-up_0.8s_ease-out]">
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>

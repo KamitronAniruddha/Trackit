@@ -143,6 +143,11 @@
                     "description": "UID of the admin currently spectating. Null if none."
                 }
             }
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the user account was created."
         }
       },
       "required": [
@@ -775,6 +780,54 @@
             "endedAt": { "type": "string", "format": "date-time" }
         },
         "required": ["adminId", "adminName", "userId", "userName", "startedAt"]
+    },
+    "ActivityLog": {
+      "title": "Activity Log",
+      "description": "Records significant actions performed within the app, primarily by admins.",
+      "type": "object",
+      "properties": {
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The time the activity occurred."
+        },
+        "actorId": {
+          "type": "string",
+          "description": "The UID of the user who performed the action."
+        },
+        "actorName": {
+          "type": "string",
+          "description": "The display name of the user who performed the action."
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "USER_BANNED",
+            "USER_UNBANNED",
+            "USER_DELETED",
+            "PREMIUM_GRANTED",
+            "PREMIUM_REVOKED",
+            "ROLE_CHANGED",
+            "UNBAN_REQUEST_APPROVED",
+            "UNBAN_REQUEST_REJECTED",
+            "CONTACT_MESSAGE_DELETED",
+            "PREMIUM_ACTIVATED_WITH_CODE"
+          ]
+        },
+        "targetId": {
+          "type": "string",
+          "description": "The UID or ID of the entity being acted upon."
+        },
+        "targetName": {
+          "type": "string",
+          "description": "The name/identifier of the target entity."
+        },
+        "details": {
+          "type": "object",
+          "description": "Additional details about the action, e.g., new role."
+        }
+      },
+      "required": ["timestamp", "actorId", "actorName", "action"]
     }
   },
   "auth": {
@@ -878,6 +931,12 @@
     "/spectateLogs/{logId}": {
       "schema": { "$ref": "#/backend/entities/SpectateLog" },
       "description": "Logs of admin spectate sessions."
+    },
+    "/activityLogs/{logId}": {
+      "schema": {
+        "$ref": "#/backend/entities/ActivityLog"
+      },
+      "description": "A log of important admin and system actions."
     }
   }
 }

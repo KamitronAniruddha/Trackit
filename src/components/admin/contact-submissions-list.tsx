@@ -28,6 +28,8 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
   } from '@/components/ui/alert-dialog';
+import { useUserProfile } from '@/contexts/user-profile-context';
+import { logActivity } from '@/lib/activity-logger';
 
 interface ContactSubmission {
     id: string;
@@ -40,6 +42,7 @@ interface ContactSubmission {
 
 export function ContactSubmissionsList() {
     const firestore = useFirestore();
+    const { profile } = useUserProfile();
     const { toast } = useToast();
     const [submissions, setSubmissions] = useState<ContactSubmission[]>([]);
     const [loading, setLoading] = useState(true);
@@ -79,13 +82,23 @@ export function ContactSubmissionsList() {
         }
     };
     
-    const handleDelete = async (submissionId: string) => {
-        const submissionRef = doc(firestore, 'contactSubmissions', submissionId);
+    const handleDelete = async (submission: ContactSubmission) => {
+        const submissionRef = doc(firestore, 'contactSubmissions', submission.id);
         try {
             await deleteDoc(submissionRef);
             toast({
                 title: 'Message Deleted',
             });
+            if(profile){
+                logActivity({
+                    firestore,
+                    actorId: profile.uid,
+                    actorName: profile.displayName,
+                    action: 'CONTACT_MESSAGE_DELETED',
+                    targetId: submission.id,
+                    targetName: submission.name
+                })
+            }
         } catch (e: any) {
             toast({ variant: 'destructive', title: 'Error', description: `Failed to delete message: ${e.message}` });
         }
@@ -156,7 +169,7 @@ export function ContactSubmissionsList() {
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleDelete(submission.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                        <AlertDialogAction onClick={() => handleDelete(submission)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                                             Delete
                                         </AlertDialogAction>
                                     </AlertDialogFooter>

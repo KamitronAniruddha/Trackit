@@ -16,6 +16,8 @@ import {
     AccordionItem,
     AccordionTrigger,
   } from "@/components/ui/accordion"
+import { useUserProfile } from '@/contexts/user-profile-context';
+import { logActivity } from '@/lib/activity-logger';
 
 interface UnbanRequest {
     id: string;
@@ -29,6 +31,7 @@ interface UnbanRequest {
 
 export function UnbanRequestsList() {
     const firestore = useFirestore();
+    const { profile: adminProfile } = useUserProfile();
     const { toast } = useToast();
     const [requests, setRequests] = useState<UnbanRequest[]>([]);
     const [loading, setLoading] = useState(true);
@@ -65,6 +68,7 @@ export function UnbanRequestsList() {
     }, [firestore]);
     
     const handleRequest = async (request: UnbanRequest, approve: boolean) => {
+        if (!adminProfile) return;
         try {
             const batch = writeBatch(firestore);
 
@@ -89,7 +93,16 @@ export function UnbanRequestsList() {
                 title: `Request ${approve ? 'Approved' : 'Rejected'}`,
                 description: `${request.userName} has been ${approve ? 'unbanned' : 'kept banned'}.`,
             });
-            // The onSnapshot listener will automatically update the UI
+            
+            logActivity({
+                firestore,
+                actorId: adminProfile.uid,
+                actorName: adminProfile.displayName,
+                action: approve ? 'UNBAN_REQUEST_APPROVED' : 'UNBAN_REQUEST_REJECTED',
+                targetId: request.userId,
+                targetName: request.userName,
+            });
+
         } catch (e: any) {
             toast({ variant: 'destructive', title: 'Error', description: `Failed to process request: ${e.message}` });
         }
