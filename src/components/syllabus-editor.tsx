@@ -59,39 +59,47 @@ const SubjectEditorDialog: React.FC<SubjectEditorProps> = ({ exam, subjectKey, s
 
     const subjectTitle = subjectKey.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
     
+    const renumberChapters = (chapterList: string[]): string[] => {
+      return chapterList.map((chapter, index) => {
+        const chapterText = chapter.replace(/^\d+\.\s*/, '');
+        return `${index + 1}. ${chapterText}`;
+      });
+    };
+
     const handleAddChapter = () => {
         if (newChapter.trim()) {
-            setChapters([...chapters, newChapter.trim()]);
+            const newChapters = [...chapters, newChapter.trim()];
+            setChapters(renumberChapters(newChapters));
             setNewChapter('');
         }
     };
 
     const handleRemoveChapter = (index: number) => {
-        setChapters(chapters.filter((_, i) => i !== index));
+        const newChapters = chapters.filter((_, i) => i !== index);
+        setChapters(renumberChapters(newChapters));
     };
 
     const handleMoveChapter = (index: number, direction: 'up' | 'down') => {
+        const newChapters = [...chapters];
         if (direction === 'up' && index > 0) {
-            const newChapters = [...chapters];
             [newChapters[index - 1], newChapters[index]] = [newChapters[index], newChapters[index - 1]];
-            setChapters(newChapters);
+            setChapters(renumberChapters(newChapters));
         } else if (direction === 'down' && index < chapters.length - 1) {
-            const newChapters = [...chapters];
             [newChapters[index + 1], newChapters[index]] = [newChapters[index], newChapters[index + 1]];
-            setChapters(newChapters);
+            setChapters(renumberChapters(newChapters));
         }
     };
 
     const startEditing = (index: number) => {
         setEditingIndex(index);
-        setEditingText(chapters[index]);
+        setEditingText(chapters[index].replace(/^\d+\.\s*/, ''));
     };
 
     const finishEditing = (index: number) => {
         if (editingText.trim()) {
             const newChapters = [...chapters];
             newChapters[index] = editingText.trim();
-            setChapters(newChapters);
+            setChapters(renumberChapters(newChapters));
         }
         setEditingIndex(null);
         setEditingText('');
