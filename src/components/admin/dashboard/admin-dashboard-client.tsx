@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -8,13 +7,15 @@ import type { UserProfile } from '@/contexts/user-profile-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Bar, BarChart, CartesianGrid, XAxis, Pie, PieChart as RechartsPieChart, Cell, LineChart, Line } from 'recharts';
-import { Loader2, Users, ShieldQuestion, Gem, Mail, UserPlus, ArrowRight, Activity, FileWarning, MessageSquare } from 'lucide-react';
+import { Loader2, Users, ShieldQuestion, Gem, Mail, UserPlus, ArrowRight, Activity, MessageSquare } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { format, subDays, startOfDay } from 'date-fns';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ActivityLog, ActivityLogFeed } from './activity-log-feed';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 // --- STAT CARD ---
 const StatCard = ({ title, value, icon: Icon, description, colorClass, isLoading }: { title: string, value: string | number, icon: React.ElementType, description: string, colorClass: string, isLoading: boolean }) => (
@@ -44,34 +45,54 @@ export function AdminDashboardClient() {
     const [unbanRequests, setUnbanRequests] = useState(0);
     const [contactMessages, setContactMessages] = useState(0);
     const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
-    const [otherStats, setOtherStats] = useState({ posts: 0, groups: 0, mistakes: 0 });
+    const [otherStats, setOtherStats] = useState({ posts: 0, groups: 0 });
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const usersQuery = query(collection(firestore, 'users'), where('isDeleted', '!=', true));
+        const usersQuery = query(collection(firestore, 'users'), where('isDeleted', '==', false));
         const unbanQuery = query(collection(firestore, 'unbanRequests'), where('status', '==', 'pending'));
         const contactQuery = query(collection(firestore, 'contactSubmissions'), where('isRead', '==', false));
         const activityQuery = query(collection(firestore, 'activityLogs'), orderBy('timestamp', 'desc'));
 
-        const unsubUsers = onSnapshot(usersQuery, snap => setUsers(snap.docs.map(d => ({ uid: d.id, ...d.data() } as UserProfile))), () => setLoading(false));
-        const unsubUnban = onSnapshot(unbanQuery, snap => setUnbanRequests(snap.size));
-        const unsubContact = onSnapshot(contactQuery, snap => setContactMessages(snap.size));
-        const unsubActivity = onSnapshot(activityQuery, snap => setActivityLogs(snap.docs.map(d => ({ id: d.id, ...d.data() } as ActivityLog))));
+        const unsubUsers = onSnapshot(usersQuery, 
+            snap => setUsers(snap.docs.map(d => ({ uid: d.id, ...d.data() } as UserProfile))),
+            error => {
+                const permissionError = new FirestorePermissionError({ path: 'users', operation: 'list' }, error);
+                errorEmitter.emit('permission-error', permissionError);
+                setLoading(false);
+            }
+        );
+        const unsubUnban = onSnapshot(unbanQuery, 
+            snap => setUnbanRequests(snap.size),
+            error => {
+                 const permissionError = new FirestorePermissionError({ path: 'unbanRequests', operation: 'list' }, error);
+                errorEmitter.emit('permission-error', permissionError);
+            }
+        );
+        const unsubContact = onSnapshot(contactQuery, 
+            snap => setContactMessages(snap.size),
+            error => {
+                const permissionError = new FirestorePermissionError({ path: 'contactSubmissions', operation: 'list' }, error);
+                errorEmitter.emit('permission-error', permissionError);
+            }
+        );
+        const unsubActivity = onSnapshot(activityQuery, 
+            snap => setActivityLogs(snap.docs.map(d => ({ id: d.id, ...d.data() } as ActivityLog))),
+            error => {
+                const permissionError = new FirestorePermissionError({ path: 'activityLogs', operation: 'list' }, error);
+                errorEmitter.emit('permission-error', permissionError);
+            }
+        );
 
         const fetchCounts = async () => {
             try {
-                const [postsSnap, groupsSnap, mistakesSnap] = await Promise.all([
+                const [postsSnap, groupsSnap] = await Promise.all([
                     getCountFromServer(collection(firestore, 'posts')),
                     getCountFromServer(collection(firestore, 'groups')),
-                    // Mistakes are a subcollection, this is more complex. For this demo, let's assume it's a top-level collection.
-                    // A real implementation would need to iterate users or use a different data model.
-                    // This count will likely be 0 unless the data model is changed.
-                    getCountFromServer(collection(firestore, 'mistakes'))
                 ]);
                 setOtherStats({
                     posts: postsSnap.data().count,
                     groups: groupsSnap.data().count,
-                    mistakes: 0 // Placeholder as it is a sub-collection
                 });
             } catch (e) {
                 console.error("Could not fetch counts", e);
